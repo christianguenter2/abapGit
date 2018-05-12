@@ -96,9 +96,7 @@ CLASS zcl_abapgit_services_repo DEFINITION
 ENDCLASS.
 
 
-
 CLASS ZCL_ABAPGIT_SERVICES_REPO IMPLEMENTATION.
-
 
   METHOD gui_deserialize.
 
@@ -162,6 +160,7 @@ CLASS ZCL_ABAPGIT_SERVICES_REPO IMPLEMENTATION.
     DATA: ls_popup TYPE zif_abapgit_popups=>ty_popup.
 
     ls_popup = zcl_abapgit_ui_factory=>get_popups( )->repo_popup( iv_url ).
+
     IF ls_popup-cancel = abap_true.
       RAISE EXCEPTION TYPE zcx_abapgit_cancel.
     ENDIF.
@@ -286,7 +285,6 @@ CLASS ZCL_ABAPGIT_SERVICES_REPO IMPLEMENTATION.
           lv_package  TYPE devclass,
           lv_question TYPE c LENGTH 100,
           ls_checks   TYPE zif_abapgit_definitions=>ty_delete_checks.
-
 
     lo_repo = zcl_abapgit_repo_srv=>get_instance( )->get( iv_key ).
 
@@ -434,7 +432,8 @@ CLASS ZCL_ABAPGIT_SERVICES_REPO IMPLEMENTATION.
 
   METHOD remote_detach.
 
-    DATA: lv_answer TYPE c LENGTH 1.
+    DATA: lv_answer TYPE c LENGTH 1,
+          li_popup  TYPE REF TO zif_abapgit_popups.
 
     lv_answer = zcl_abapgit_ui_factory=>get_popups( )->popup_to_confirm(
       iv_titlebar              = 'Make repository OFF-line'
@@ -462,7 +461,8 @@ CLASS ZCL_ABAPGIT_SERVICES_REPO IMPLEMENTATION.
     DATA: lv_answer   TYPE c LENGTH 1,
           lo_repo     TYPE REF TO zcl_abapgit_repo,
           lv_package  TYPE devclass,
-          lv_question TYPE c LENGTH 200.
+          lv_question TYPE c LENGTH 200,
+          li_popup    TYPE REF TO zif_abapgit_popups.
 
 
     lo_repo     = zcl_abapgit_repo_srv=>get_instance( )->get( iv_key ).

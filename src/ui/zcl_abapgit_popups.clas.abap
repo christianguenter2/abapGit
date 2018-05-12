@@ -1004,6 +1004,47 @@ CLASS zcl_abapgit_popups IMPLEMENTATION.
   ENDMETHOD.                    "repo_new_offline
 
 
+  METHOD run_page_class_popup.
+
+    DATA: lv_answer TYPE c LENGTH 1,
+          lt_fields TYPE TABLE OF sval.
+
+    FIELD-SYMBOLS: <ls_field> LIKE LINE OF lt_fields.
+
+
+    CLEAR: ev_name, ev_cancel.
+
+    add_field( EXPORTING iv_tabname   = 'TEXTL'
+                         iv_fieldname = 'LINE'
+                         iv_fieldtext = 'Name'
+                         iv_value     = 'lcl_gui_page_'
+               CHANGING ct_fields     = lt_fields ).
+
+    CALL FUNCTION 'POPUP_GET_VALUES'
+      EXPORTING
+        popup_title     = 'Run page manually'
+      IMPORTING
+        returncode      = lv_answer
+      TABLES
+        fields          = lt_fields
+      EXCEPTIONS
+        error_in_fields = 1
+        OTHERS          = 2 ##NO_TEXT.
+    IF sy-subrc <> 0.
+      zcx_abapgit_exception=>raise( 'error from POPUP_GET_VALUES' ).
+    ENDIF.
+
+    IF lv_answer = 'A'.
+      ev_cancel = abap_true.
+    ELSE.
+      READ TABLE lt_fields INDEX 1 ASSIGNING <ls_field>.
+      ASSERT sy-subrc = 0.
+      ev_name = to_upper( <ls_field>-value ).
+    ENDIF.
+
+  ENDMETHOD.  "run_page_class_popup
+
+
   METHOD zif_abapgit_popups~repo_popup.
 
     DATA: lv_returncode TYPE c,
@@ -1122,45 +1163,5 @@ CLASS zcl_abapgit_popups IMPLEMENTATION.
 
   ENDMETHOD.
 
-
-  METHOD zif_abapgit_popups~run_page_class_popup.
-
-    DATA: lv_answer TYPE c LENGTH 1,
-          lt_fields TYPE TABLE OF sval.
-
-    FIELD-SYMBOLS: <ls_field> LIKE LINE OF lt_fields.
-
-
-    CLEAR: ev_name, ev_cancel.
-
-    add_field( EXPORTING iv_tabname   = 'TEXTL'
-                         iv_fieldname = 'LINE'
-                         iv_fieldtext = 'Name'
-                         iv_value     = 'lcl_gui_page_'
-               CHANGING ct_fields     = lt_fields ).
-
-    CALL FUNCTION 'POPUP_GET_VALUES'
-      EXPORTING
-        popup_title     = 'Run page manually'
-      IMPORTING
-        returncode      = lv_answer
-      TABLES
-        fields          = lt_fields
-      EXCEPTIONS
-        error_in_fields = 1
-        OTHERS          = 2 ##NO_TEXT.
-    IF sy-subrc <> 0.
-      zcx_abapgit_exception=>raise( 'error from POPUP_GET_VALUES' ).
-    ENDIF.
-
-    IF lv_answer = 'A'.
-      ev_cancel = abap_true.
-    ELSE.
-      READ TABLE lt_fields INDEX 1 ASSIGNING <ls_field>.
-      ASSERT sy-subrc = 0.
-      ev_name = to_upper( <ls_field>-value ).
-    ENDIF.
-
-  ENDMETHOD.  "run_page_class_popup
 
 ENDCLASS.
