@@ -58,7 +58,6 @@ CLASS zcl_abapgit_http IMPLEMENTATION.
           lv_pass         TYPE string,
           lo_digest       TYPE REF TO zcl_abapgit_http_digest.
 
-
     lv_default_user = zcl_abapgit_persistence_user=>get_instance( )->get_repo_login( iv_url ).
     lv_user         = lv_default_user.
 

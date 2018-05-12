@@ -183,7 +183,15 @@ CLASS zcl_abapgit_objects DEFINITION
     CLASS-METHODS change_package_assignments
       IMPORTING
         !is_item TYPE zif_abapgit_definitions=>ty_item
-        !ii_log  TYPE REF TO zif_abapgit_log .
+        !ii_log  TYPE REF TO zif_abapgit_log.
+    CLASS-METHODS tadir_entry_should_be_deleted
+      IMPORTING
+        ii_obj                            TYPE REF TO zif_abapgit_object
+        is_item                           TYPE zif_abapgit_definitions=>ty_item
+      RETURNING
+        VALUE(rv_tadir_should_be_deleted) TYPE abap_bool
+      RAISING
+        zcx_abapgit_exception.
 ENDCLASS.
 
 
@@ -553,7 +561,8 @@ CLASS zcl_abapgit_objects IMPLEMENTATION.
     li_obj->delete( iv_package   = iv_package
                     iv_transport = iv_transport ).
 
-    IF li_obj->get_metadata( )-delete_tadir = abap_true.
+    IF tadir_entry_should_be_deleted( ii_obj  = li_obj
+                                      is_item = is_item ) = abap_true.
 
       CALL FUNCTION 'TR_TADIR_INTERFACE'
         EXPORTING
@@ -1162,4 +1171,18 @@ CLASS zcl_abapgit_objects IMPLEMENTATION.
     ENDLOOP.
 
   ENDMETHOD.
+
+
+
+  METHOD tadir_entry_should_be_deleted.
+
+    DATA: li_package TYPE REF TO zif_abapgit_sap_package.
+
+    li_package = zcl_abapgit_factory=>get_sap_package( is_item-devclass ).
+
+    rv_tadir_should_be_deleted = boolc( ii_obj->get_metadata( )-delete_tadir = abap_true
+                                    AND li_package->are_changes_recorded_in_tr_req( ) = abap_false ).
+
+  ENDMETHOD.
+
 ENDCLASS.

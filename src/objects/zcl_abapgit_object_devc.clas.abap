@@ -81,7 +81,12 @@ CLASS zcl_abapgit_object_devc IMPLEMENTATION.
   METHOD is_empty.
 
     DATA: lv_object_name TYPE tadir-obj_name,
-          lt_subpackages TYPE zif_abapgit_sap_package=>ty_devclass_tt.
+          lt_subpackages TYPE zif_abapgit_sap_package=>ty_devclass_tt,
+          lt_tadir       TYPE STANDARD TABLE OF tadir
+                              WITH NON-UNIQUE DEFAULT KEY,
+          ls_item        TYPE zif_abapgit_definitions=>ty_item.
+
+    FIELD-SYMBOLS: <ls_tadir> TYPE tadir.
 
     lt_subpackages = zcl_abapgit_factory=>get_sap_package( iv_package_name )->list_subpackages( ).
 

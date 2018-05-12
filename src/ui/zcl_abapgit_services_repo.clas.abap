@@ -94,9 +94,7 @@ CLASS zcl_abapgit_services_repo DEFINITION
 ENDCLASS.
 
 
-
-CLASS ZCL_ABAPGIT_SERVICES_REPO IMPLEMENTATION.
-
+CLASS zcl_abapgit_services_repo IMPLEMENTATION.
 
   METHOD check_package.
 
