@@ -90,9 +90,7 @@ CLASS zcl_abapgit_services_repo DEFINITION
 ENDCLASS.
 
 
-
-CLASS ZCL_ABAPGIT_SERVICES_REPO IMPLEMENTATION.
-
+CLASS zcl_abapgit_services_repo IMPLEMENTATION.
 
   METHOD check_package.
 
@@ -316,7 +314,6 @@ CLASS ZCL_ABAPGIT_SERVICES_REPO IMPLEMENTATION.
           lv_repo_name TYPE string,
           lv_message   TYPE string.
 
-
     lo_repo = zcl_abapgit_repo_srv=>get_instance( )->get( iv_key ).
     lv_repo_name = lo_repo->get_name( ).
 
@@ -478,7 +475,8 @@ CLASS ZCL_ABAPGIT_SERVICES_REPO IMPLEMENTATION.
 
   METHOD remote_detach.
 
-    DATA: lv_answer TYPE c LENGTH 1.
+    DATA: lv_answer TYPE c LENGTH 1,
+          li_popup  TYPE REF TO zif_abapgit_popups.
 
     lv_answer = zcl_abapgit_ui_factory=>get_popups( )->popup_to_confirm(
       iv_titlebar              = 'Make repository OFF-line'

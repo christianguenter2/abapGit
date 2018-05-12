@@ -17,7 +17,7 @@ ENDCLASS.
 
 
 
-CLASS ZCL_ABAPGIT_MIGRATIONS IMPLEMENTATION.
+CLASS zcl_abapgit_migrations IMPLEMENTATION.
 
 
   METHOD local_dot_abapgit.

@@ -107,7 +107,6 @@ CLASS ZCL_ABAPGIT_SERVICES_ABAPGIT IMPLEMENTATION.
     DATA: lo_repo   TYPE REF TO zcl_abapgit_repo_online,
           lv_answer TYPE c LENGTH 1.
 
-
     lv_answer = zcl_abapgit_ui_factory=>get_popups( )->popup_to_confirm(
       iv_titlebar              = iv_title
       iv_text_question         = iv_text

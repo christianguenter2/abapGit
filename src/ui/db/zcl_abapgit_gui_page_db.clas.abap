@@ -38,7 +38,7 @@ ENDCLASS.
 
 
 
-CLASS ZCL_ABAPGIT_GUI_PAGE_DB IMPLEMENTATION.
+CLASS zcl_abapgit_gui_page_db IMPLEMENTATION.
 
 
   METHOD constructor.
@@ -49,7 +49,8 @@ CLASS ZCL_ABAPGIT_GUI_PAGE_DB IMPLEMENTATION.
 
   METHOD delete.
 
-    DATA: lv_answer TYPE c LENGTH 1.
+    DATA: lv_answer TYPE c LENGTH 1,
+          li_popup  TYPE REF TO zif_abapgit_popups.
 
     ASSERT is_key-type IS NOT INITIAL.
 
