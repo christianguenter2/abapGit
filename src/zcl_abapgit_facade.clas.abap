@@ -206,7 +206,7 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
 
     IF lv_sha1 IS INITIAL.
       mo_repo ?= zcl_abapgit_repo_srv=>get_instance( )->get( mv_key ).
-      lv_sha1 = mo_repo->get_sha1_local( ).
+      lv_sha1 = mo_repo->get_sha1_remote( ).
     ENDIF.
 
     ls_tag-name = zcl_abapgit_tag=>add_tag_prefix( iv_tag_name ).
@@ -221,6 +221,15 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
     ENDTRY.
 
     rv_message = |Lightweight tag { zcl_abapgit_tag=>remove_tag_prefix( iv_tag_name ) } created| ##NO_TEXT.
+
+  ENDMETHOD.
+
+
+  METHOD has_error.
+
+    READ TABLE it_code_inspection TRANSPORTING NO FIELDS
+                                  WITH KEY kind = 'E'.
+    rv_has_error = boolc( sy-subrc = 0 ).
 
   ENDMETHOD.
 
@@ -242,13 +251,4 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
     ENDTRY.
 
   ENDMETHOD.
-
-  METHOD has_error.
-
-    READ TABLE it_code_inspection TRANSPORTING NO FIELDS
-                                  WITH KEY kind = 'E'.
-    rv_has_error = boolc( sy-subrc = 0 ).
-
-  ENDMETHOD.
-
 ENDCLASS.
