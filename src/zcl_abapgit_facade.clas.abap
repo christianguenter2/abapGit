@@ -211,6 +211,7 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
 
     ls_tag-name = zcl_abapgit_tag=>add_tag_prefix( iv_tag_name ).
     ls_tag-type = zif_abapgit_definitions=>c_git_branch_type-lightweight_tag.
+    ls_tag-sha1 = lv_sha1.
 
     TRY.
         zcl_abapgit_git_porcelain=>create_tag( iv_url = mo_repo->get_url( )
