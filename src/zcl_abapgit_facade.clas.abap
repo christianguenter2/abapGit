@@ -213,8 +213,8 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
     ls_tag-type = zif_abapgit_definitions=>c_git_branch_type-lightweight_tag.
 
     TRY.
-        zcl_abapgit_git_porcelain=>create_tag( io_repo = mo_repo
-                                               is_tag  = ls_tag ).
+        zcl_abapgit_git_porcelain=>create_tag( iv_url = mo_repo->get_url( )
+                                               is_tag = ls_tag ).
 
       CATCH zcx_abapgit_cancel INTO DATA(error).
         zcx_abapgit_exception=>raise( error->get_text( ) ).
