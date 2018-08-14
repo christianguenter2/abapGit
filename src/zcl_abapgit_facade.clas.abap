@@ -144,8 +144,7 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
 
     CREATE OBJECT lo_stage
       EXPORTING
-        iv_branch_name = mo_repo->get_branch_name( )
-        iv_branch_sha1 = mo_repo->get_sha1_remote( ).
+        iv_merge_source = mo_repo->get_sha1_remote( ).
 
     LOOP AT ls_files-local ASSIGNING <ls_local>.
 
