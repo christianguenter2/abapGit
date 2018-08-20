@@ -87,9 +87,14 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
 
     zcl_abapgit_ui_injector=>set_popups( lo_popup_provider ).
 
-    zcl_abapgit_login_manager=>set( iv_uri      = iv_url
-                                    iv_username = mv_username
-                                    iv_password = mv_password ).
+    IF  mv_username IS NOT INITIAL
+    AND mv_password IS NOT INITIAL.
+
+      zcl_abapgit_login_manager=>set( iv_uri      = iv_url
+                                      iv_username = mv_username
+                                      iv_password = mv_password ).
+
+    ENDIF.
 
     TRY.
         zcl_abapgit_services_repo=>new_online( iv_url ).
@@ -110,9 +115,14 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
       mv_key      = iv_key.
       mo_repo ?= zcl_abapgit_repo_srv=>get_instance( )->get( mv_key ).
 
-      zcl_abapgit_login_manager=>set( iv_uri      = mo_repo->get_url( )
-                                      iv_username = iv_user
-                                      iv_password = iv_password ).
+      IF  iv_user IS NOT INITIAL
+      AND iv_password IS NOT INITIAL.
+
+        zcl_abapgit_login_manager=>set( iv_uri      = mo_repo->get_url( )
+                                        iv_username = iv_user
+                                        iv_password = iv_password ).
+
+      ENDIF.
 
     ENDIF.
 
