@@ -152,9 +152,7 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    CREATE OBJECT lo_stage
-      EXPORTING
-        iv_merge_source = mo_repo->get_sha1_remote( ).
+    CREATE OBJECT lo_stage.
 
     LOOP AT ls_files-local ASSIGNING <ls_local>.
 
