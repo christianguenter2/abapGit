@@ -49,6 +49,8 @@ CLASS zcl_abapgit_facade DEFINITION
         IMPORTING
           iv_url     TYPE string
           iv_package TYPE devclass
+        RETURNING
+          VALUE(ro_repo) TYPE REF TO zcl_abapgit_repo
         RAISING
           zcx_abapgit_exception,
 
@@ -97,7 +99,7 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
     ENDIF.
 
     TRY.
-        zcl_abapgit_services_repo=>new_online( iv_url ).
+        ro_repo = zcl_abapgit_services_repo=>new_online( iv_url ).
       CATCH zcx_abapgit_cancel INTO DATA(error).
         zcx_abapgit_exception=>raise( error->get_text( ) ).
     ENDTRY.
