@@ -218,6 +218,14 @@ CLASS zcl_abapgit_objects DEFINITION
     CLASS-METHODS get_deserialize_steps
       RETURNING
         VALUE(rt_steps) TYPE zif_abapgit_definitions=>ty_step_data_tt .
+    CLASS-METHODS tadir_entry_should_be_deleted
+      IMPORTING
+        ii_obj                            TYPE REF TO zif_abapgit_object
+        is_item                           TYPE zif_abapgit_definitions=>ty_item
+      RETURNING
+        VALUE(rv_tadir_should_be_deleted) TYPE abap_bool
+      RAISING
+        zcx_abapgit_exception.
 ENDCLASS.
 
 
@@ -496,6 +504,22 @@ CLASS ZCL_ABAPGIT_OBJECTS IMPLEMENTATION.
         check_objects_locked( iv_language = zif_abapgit_definitions=>c_english
                               it_items    = lt_items ).
 
+        LOOP AT lt_tadir ASSIGNING <ls_tadir>.
+          li_progress->show( iv_current = sy-tabix
+                             iv_text    = |Delete { <ls_tadir>-obj_name }| ) ##NO_TEXT.
+
+          CLEAR ls_item.
+          ls_item-obj_type = <ls_tadir>-object.
+          ls_item-obj_name = <ls_tadir>-obj_name.
+          ls_item-devclass = <ls_tadir>-devclass.
+          delete_obj(
+            iv_package = <ls_tadir>-devclass
+            is_item    = ls_item ).
+
+* make sure to save object deletions
+          COMMIT WORK.
+        ENDLOOP.
+
       CATCH zcx_abapgit_exception INTO lx_error.
         zcl_abapgit_default_transport=>get_instance( )->reset( ).
         RAISE EXCEPTION lx_error.
@@ -541,14 +565,15 @@ CLASS ZCL_ABAPGIT_OBJECTS IMPLEMENTATION.
 
     DATA: li_obj TYPE REF TO zif_abapgit_object.
 
-
     IF is_supported( is_item ) = abap_true.
       li_obj = create_object( is_item     = is_item
                               iv_language = zif_abapgit_definitions=>c_english ).
 
       li_obj->delete( iv_package ).
 
-      IF li_obj->get_metadata( )-delete_tadir = abap_true.
+      IF tadir_entry_should_be_deleted( ii_obj  = li_obj
+                                        is_item = is_item ) = abap_true.
+
         CALL FUNCTION 'TR_TADIR_INTERFACE'
           EXPORTING
             wi_delete_tadir_entry = abap_true
@@ -567,6 +592,7 @@ CLASS ZCL_ABAPGIT_OBJECTS IMPLEMENTATION.
         " TODO: This is not very clean and has to be improved in the future. See PR 2741.
 
       ENDIF.
+
     ENDIF.
 
   ENDMETHOD.
@@ -1378,4 +1404,16 @@ CLASS ZCL_ABAPGIT_OBJECTS IMPLEMENTATION.
     rt_overwrite = lt_overwrite_uniqe.
 
   ENDMETHOD.
+
+  METHOD tadir_entry_should_be_deleted.
+
+    DATA: li_package TYPE REF TO zif_abapgit_sap_package.
+
+    li_package = zcl_abapgit_factory=>get_sap_package( is_item-devclass ).
+
+    rv_tadir_should_be_deleted = boolc( ii_obj->get_metadata( )-delete_tadir = abap_true
+                                    AND li_package->are_changes_recorded_in_tr_req( ) = abap_false ).
+
+  ENDMETHOD.
+
 ENDCLASS.
