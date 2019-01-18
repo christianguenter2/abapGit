@@ -47,8 +47,8 @@ CLASS zcl_abapgit_facade DEFINITION
 
       clone
         IMPORTING
-          iv_url     TYPE string
-          iv_package TYPE devclass
+          iv_url         TYPE string
+          iv_package     TYPE devclass
         RETURNING
           VALUE(ro_repo) TYPE REF TO zcl_abapgit_repo
         RAISING
@@ -58,7 +58,7 @@ CLASS zcl_abapgit_facade DEFINITION
         RAISING
           zcx_abapgit_exception.
 
-protected section.
+  PROTECTED SECTION.
   PRIVATE SECTION.
     DATA:
       mv_key      TYPE zif_abapgit_persistence=>ty_value,
@@ -77,7 +77,7 @@ ENDCLASS.
 
 
 
-CLASS ZCL_ABAPGIT_FACADE IMPLEMENTATION.
+CLASS zcl_abapgit_facade IMPLEMENTATION.
 
 
   METHOD clone.
