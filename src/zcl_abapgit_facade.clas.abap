@@ -58,6 +58,7 @@ CLASS zcl_abapgit_facade DEFINITION
         RAISING
           zcx_abapgit_exception.
 
+protected section.
   PRIVATE SECTION.
     DATA:
       mv_key      TYPE zif_abapgit_persistence=>ty_value,
@@ -75,7 +76,8 @@ CLASS zcl_abapgit_facade DEFINITION
 ENDCLASS.
 
 
-CLASS zcl_abapgit_facade IMPLEMENTATION.
+
+CLASS ZCL_ABAPGIT_FACADE IMPLEMENTATION.
 
 
   METHOD clone.
@@ -186,9 +188,11 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
     ls_comment-committer-email = iv_committer_email.
     ls_comment-comment         = iv_comment.
 
-    IF mo_repo->get_local_settings( )-code_inspector_check_variant IS NOT INITIAL.
+    DATA(lv_check_variant) = mo_repo->get_local_settings( )-code_inspector_check_variant.
 
-      et_code_inspection = mo_repo->run_code_inspector( ).
+    IF lv_check_variant IS NOT INITIAL.
+
+      et_code_inspection = mo_repo->run_code_inspector( |{ lv_check_variant }| ).
 
       IF mo_repo->get_local_settings( )-block_commit = abap_true
       AND has_error( et_code_inspection ) = abap_true.
