@@ -77,7 +77,7 @@ ENDCLASS.
 
 
 
-CLASS zcl_abapgit_facade IMPLEMENTATION.
+CLASS ZCL_ABAPGIT_FACADE IMPLEMENTATION.
 
 
   METHOD clone.
@@ -192,7 +192,7 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
 
     IF lv_check_variant IS NOT INITIAL.
 
-      et_code_inspection = mo_repo->run_code_inspector( |{ lv_check_variant }| ).
+      et_code_inspection = zcl_abapgit_factory=>get_code_inspector( mo_repo->get_package( ) )->run( lv_check_variant ).
 
       IF mo_repo->get_local_settings( )-block_commit = abap_true
       AND has_error( et_code_inspection ) = abap_true.
@@ -222,7 +222,7 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
       lv_sha1 = mo_repo->get_sha1_remote( ).
     ENDIF.
 
-    ls_tag-name = zcl_abapgit_tag=>add_tag_prefix( iv_tag_name ).
+    ls_tag-name = zcl_abapgit_git_tag=>add_tag_prefix( iv_tag_name ).
     ls_tag-type = zif_abapgit_definitions=>c_git_branch_type-lightweight_tag.
     ls_tag-sha1 = lv_sha1.
 
@@ -234,7 +234,7 @@ CLASS zcl_abapgit_facade IMPLEMENTATION.
         zcx_abapgit_exception=>raise( error->get_text( ) ).
     ENDTRY.
 
-    rv_message = |Lightweight tag { zcl_abapgit_tag=>remove_tag_prefix( iv_tag_name ) } created| ##NO_TEXT.
+    rv_message = |Lightweight tag { zcl_abapgit_git_tag=>remove_tag_prefix( iv_tag_name ) } created| ##NO_TEXT.
 
   ENDMETHOD.
 
