@@ -906,7 +906,21 @@ CLASS zcl_abapgit_objects_program IMPLEMENTATION.
       CREATE OBJECT li_xml TYPE zcl_abapgit_xml_output.
     ENDIF.
 
-    li_xml->add( iv_name = 'PROGDIR'
+    " CSN specific hacks
+    IF ls_progdir-name CS |/CSN/LFFS_SM30F00|
+    OR ls_progdir-name CS |/CSN/LFFS_SM30I00|
+    OR ls_progdir-name CS |/CSN/LFFS_SM30T00|.
+      CLEAR: ls_progdir-uccheck.
+    ENDIF.
+
+    IF ls_progdir-name CS |/CSN/LFFS_SM30F00|
+    OR ls_progdir-name CS |/CSN/LFFS_SM30I00|
+    OR ls_progdir-name CS |/CSN/SAPLFFS_SM30|.
+      ls_progdir-sqlx = abap_true.
+    ENDIF.
+    " CSN end
+
+    lo_xml->add( iv_name = 'PROGDIR'
                  ig_data = ls_progdir ).
     IF ls_progdir-subc = '1' OR ls_progdir-subc = 'M'.
       lt_dynpros = serialize_dynpros( lv_program_name ).
