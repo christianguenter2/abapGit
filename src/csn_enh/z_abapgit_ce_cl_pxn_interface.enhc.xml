@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_ENHC" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <SHORTTEXT>Patching CL_PXN_INTERFACE</SHORTTEXT>
+   <ENH_CHILDS>
+    <ENHNAME>Z_ENH_ABAPGIT_CL_PXN_INTERFAC2</ENHNAME>
+    <ENHNAME>Z_ENH_ABAPGIT_CL_PXN_INTERFACE</ENHNAME>
+   </ENH_CHILDS>
+  </asx:values>
+ </asx:abap>
+</abapGit>
