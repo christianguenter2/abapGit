@@ -74,7 +74,7 @@ CLASS ZCL_ABAPGIT_OBJECT_DEVC IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    SELECT *
+    SELECT SINGLE obj_name
            FROM tadir
            INTO lv_object_name
            WHERE pgmid = 'R3TR'
