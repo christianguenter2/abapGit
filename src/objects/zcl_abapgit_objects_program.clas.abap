@@ -920,7 +920,7 @@ CLASS zcl_abapgit_objects_program IMPLEMENTATION.
     ENDIF.
     " CSN end
 
-    io_xml->add( iv_name = 'PROGDIR'
+    li_xml->add( iv_name = 'PROGDIR'
                  ig_data = ls_progdir ).
     IF ls_progdir-subc = '1' OR ls_progdir-subc = 'M'.
       lt_dynpros = serialize_dynpros( lv_program_name ).
