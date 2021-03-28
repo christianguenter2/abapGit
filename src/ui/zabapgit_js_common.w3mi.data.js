@@ -650,7 +650,9 @@ StageHelper.prototype.submitPatch = function(){
 StageHelper.prototype.collectData = function () {
   var data  = {};
   this.iterateStageTab(false, function (row) {
-    data[row.cells[this.colIndex["name"]].innerText] = row.cells[this.colIndex["status"]].innerText;
+    //data[row.cells[this.colIndex["name"]].innerText] = row.cells[this.colIndex["status"]].innerText;
+    var filepath = escape(row.cells[this.colIndex["name"]].dataset.path + row.cells[this.colIndex["name"]].dataset.filename);
+    data[filepath] = row.cells[this.colIndex["status"]].innerText;
   });
   return data;
 };

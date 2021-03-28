@@ -455,8 +455,9 @@ CLASS zcl_abapgit_gui_page_stage IMPLEMENTATION.
 
   METHOD render_file.
 
-    DATA: lv_param    TYPE string,
-          lv_filename TYPE string.
+    DATA: lv_param       TYPE string,
+          lv_filename    TYPE string,
+          lv_custom_data TYPE string.
 
     CREATE OBJECT ri_html TYPE zcl_abapgit_html.
 
@@ -471,6 +472,8 @@ CLASS zcl_abapgit_gui_page_stage IMPLEMENTATION.
       iv_rstate = is_status-rstate ) ).
     ri_html->add( '</td>' ).
 
+    lv_custom_data = | data-path="{ is_file-path }" data-filename="{ is_file-filename }" |.
+
     CASE iv_context.
       WHEN 'local'.
         lv_param = zcl_abapgit_html_action_utils=>file_encode(
@@ -478,14 +481,14 @@ CLASS zcl_abapgit_gui_page_stage IMPLEMENTATION.
           ig_file = is_file ).
 
         lv_filename = ri_html->a(
-          iv_txt = lv_filename
-          iv_act = |{ zif_abapgit_definitions=>c_action-go_file_diff }?{ lv_param }| ).
+          iv_txt  = lv_filename
+          iv_act  = |{ zif_abapgit_definitions=>c_action-go_file_diff }?{ lv_param }| ).
 
         ri_html->add( |<td class="type">{ is_item-obj_type }</td>| ).
-        ri_html->add( |<td class="name">{ lv_filename }</td>| ).
+        ri_html->add( |<td class="name" { lv_custom_data }>{ lv_filename }</td>| ).
       WHEN 'remote'.
         ri_html->add( |<td class="type">{ is_item-obj_type }</td>| ).
-        ri_html->add( |<td class="name">{ lv_filename }</td>| ).
+        ri_html->add( |<td class="name" { lv_custom_data  }>{ lv_filename }</td>| ).
     ENDCASE.
 
     ri_html->add( '<td class="user">' ).
