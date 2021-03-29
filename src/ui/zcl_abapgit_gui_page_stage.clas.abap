@@ -484,13 +484,10 @@ CLASS zcl_abapgit_gui_page_stage IMPLEMENTATION.
         lv_filename = ri_html->a(
           iv_txt  = lv_filename
           iv_act  = |{ zif_abapgit_definitions=>c_action-go_file_diff }?{ lv_param }| ).
-
-        ri_html->add( |<td class="type">{ is_item-obj_type }</td>| ).
-        ri_html->add( |<td class="name" { lv_custom_data }>{ lv_filename }</td>| ).
-      WHEN 'remote'.
-        ri_html->add( |<td class="type">{ is_item-obj_type }</td>| ).
-        ri_html->add( |<td class="name" { lv_custom_data  }>{ lv_filename }</td>| ).
     ENDCASE.
+
+    ri_html->add( |<td class="type">{ is_item-obj_type }</td>| ).
+    ri_html->add( |<td class="name" { lv_custom_data  }>{ lv_filename }</td>| ).
 
     ri_html->add( '<td class="user">' ).
     ri_html->add( zcl_abapgit_gui_chunk_lib=>render_user_name( iv_changed_by  ) ).
