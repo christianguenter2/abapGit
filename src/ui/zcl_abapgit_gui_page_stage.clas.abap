@@ -472,7 +472,8 @@ CLASS zcl_abapgit_gui_page_stage IMPLEMENTATION.
       iv_rstate = is_status-rstate ) ).
     ri_html->add( '</td>' ).
 
-    lv_custom_data = | data-path="{ is_file-path }" data-filename="{ is_file-filename }" |.
+    lv_custom_data = | data-path="{ zcl_abapgit_http_utility=>escape( is_file-path ) }"|
+                  && | data-filename="{ zcl_abapgit_http_utility=>escape( is_file-filename ) }" |.
 
     CASE iv_context.
       WHEN 'local'.

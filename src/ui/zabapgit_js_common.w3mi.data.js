@@ -452,7 +452,7 @@ StageHelper.prototype.onPageLoad = function() {
   var data = window.sessionStorage && JSON.parse(window.sessionStorage.getItem(this.pageSeed));
 
   this.iterateStageTab(true, function (row) {
-    var status = data && data[row.cells[this.colIndex["name"]].innerText];
+    var status = data && data[this.getFullFilePath(row)];
     this.updateRow(row, status || this.STATUS.reset);
   });
 
@@ -651,10 +651,19 @@ StageHelper.prototype.collectData = function () {
   var data  = {};
   this.iterateStageTab(false, function (row) {
     //data[row.cells[this.colIndex["name"]].innerText] = row.cells[this.colIndex["status"]].innerText;
-    var filepath = escape(row.cells[this.colIndex["name"]].dataset.path + row.cells[this.colIndex["name"]].dataset.filename);
-    data[filepath] = row.cells[this.colIndex["status"]].innerText;
+    //var filepath = escape(row.cells[this.colIndex["name"]].dataset.path + row.cells[this.colIndex["name"]].dataset.filename);
+    data[this.getFullFilePath(row)] = row.cells[this.colIndex["status"]].innerText;
   });
   return data;
+};
+
+StageHelper.prototype.getCustomAttributes = function(row){
+  return row.cells[this.colIndex["name"]].dataset;
+};
+
+StageHelper.prototype.getFullFilePath = function(row){
+  var customAttributes = this.getCustomAttributes(row);
+  return customAttributes.path + customAttributes.filename;
 };
 
 StageHelper.prototype.markVisiblesAsAdded = function () {
