@@ -475,16 +475,15 @@ CLASS zcl_abapgit_gui_page_stage IMPLEMENTATION.
     lv_custom_data = | data-path="{ zcl_abapgit_http_utility=>escape( is_file-path ) }"|
                   && | data-filename="{ zcl_abapgit_http_utility=>escape( is_file-filename ) }" |.
 
-    CASE iv_context.
-      WHEN 'local'.
-        lv_param = zcl_abapgit_html_action_utils=>file_encode(
-          iv_key  = mo_repo->get_key( )
-          ig_file = is_file ).
+    IF iv_context = 'local'.
+      lv_param = zcl_abapgit_html_action_utils=>file_encode(
+        iv_key  = mo_repo->get_key( )
+        ig_file = is_file ).
 
-        lv_filename = ri_html->a(
-          iv_txt  = lv_filename
-          iv_act  = |{ zif_abapgit_definitions=>c_action-go_file_diff }?{ lv_param }| ).
-    ENDCASE.
+      lv_filename = ri_html->a(
+        iv_txt  = lv_filename
+        iv_act  = |{ zif_abapgit_definitions=>c_action-go_file_diff }?{ lv_param }| ).
+    ENDIF.
 
     ri_html->add( |<td class="type">{ is_item-obj_type }</td>| ).
     ri_html->add( |<td class="name" { lv_custom_data  }>{ lv_filename }</td>| ).
