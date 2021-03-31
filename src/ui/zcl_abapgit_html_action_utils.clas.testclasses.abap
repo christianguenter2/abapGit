@@ -28,12 +28,15 @@ CLASS ltcl_html_action_utils DEFINITION FOR TESTING RISK LEVEL HARMLESS
                 END OF gs_german_umlaut_as_char.
 
     DATA mv_given_parse_string TYPE string.
+    DATA mv_given_no_encoding TYPE abap_bool.
     DATA mt_parsed_fields TYPE tihttpnvp.
 
     METHODS _given_string_is
       IMPORTING
         iv_string TYPE string.
-    METHODS _when_fields_are_parsed_upper.
+    METHODS _given_no_encoding
+      IMPORTING
+        iv_no_encoding TYPE abap_bool.
     METHODS _when_fields_are_parsed.
     METHODS _then_fields_should_be
       IMPORTING
@@ -205,7 +208,9 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
                    && |author_name=Gerd Schr{ lv_oe }der&|
                    && |author_email=gerd@schroeder.com| ).
 
-    _when_fields_are_parsed_upper( ).
+    _given_no_encoding( abap_true ).
+
+    _when_fields_are_parsed( ).
 
     _then_fields_should_be( iv_index = 1
                             iv_name  = `COMMITTER_NAME`
@@ -239,9 +244,18 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
 
   ENDMETHOD.
 
-  METHOD _when_fields_are_parsed_upper.
+  METHOD _given_no_encoding.
 
-    mt_parsed_fields = zcl_abapgit_html_action_utils=>parse_fields_upper_case_name( mv_given_parse_string ).
+    mv_given_no_encoding = iv_no_encoding.
+
+  ENDMETHOD.
+
+  METHOD _when_fields_are_parsed.
+
+    mt_parsed_fields = zcl_abapgit_html_action_utils=>parse_fields(
+                           iv_string      = mv_given_parse_string
+                           iv_upper_cased = abap_true
+                           iv_no_encoding = mv_given_no_encoding ).
 
   ENDMETHOD.
 

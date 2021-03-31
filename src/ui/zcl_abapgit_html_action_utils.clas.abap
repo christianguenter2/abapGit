@@ -8,17 +8,14 @@ CLASS zcl_abapgit_html_action_utils DEFINITION
       IMPORTING
         !it_post_data    TYPE zif_abapgit_html_viewer=>ty_post_data
         !iv_upper_cased  TYPE abap_bool DEFAULT abap_false
+        iv_no_encoding   TYPE abap_bool DEFAULT abap_false
       RETURNING
         VALUE(rt_fields) TYPE tihttpnvp .
     CLASS-METHODS parse_fields
       IMPORTING
         !iv_string       TYPE clike
         !iv_upper_cased  TYPE abap_bool DEFAULT abap_false
-      RETURNING
-        VALUE(rt_fields) TYPE tihttpnvp .
-    CLASS-METHODS parse_fields_upper_case_name
-      IMPORTING
-        !iv_string       TYPE clike
+        iv_no_encoding   TYPE abap_bool DEFAULT abap_false
       RETURNING
         VALUE(rt_fields) TYPE tihttpnvp .
     CLASS-METHODS translate_postdata
@@ -26,7 +23,6 @@ CLASS zcl_abapgit_html_action_utils DEFINITION
         !it_postdata     TYPE zif_abapgit_html_viewer=>ty_post_data
       RETURNING
         VALUE(rv_string) TYPE string .
-
     CLASS-METHODS get_field
       IMPORTING
         !iv_name   TYPE string
@@ -75,10 +71,11 @@ CLASS zcl_abapgit_html_action_utils DEFINITION
         !ct_fields TYPE tihttpnvp .
     CLASS-METHODS add_field
       IMPORTING
-        !iv_name  TYPE string
-        !ig_field TYPE any
+        iv_name  TYPE string
+        ig_field TYPE any
       CHANGING
-        !ct_field TYPE tihttpnvp .
+        ct_field TYPE tihttpnvp .
+
 
 ENDCLASS.
 
@@ -249,8 +246,10 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
     LOOP AT lt_substrings ASSIGNING <lv_substring>.
 
       CLEAR ls_field.
-      <lv_substring> = cl_http_utility=>unescape_url( <lv_substring> ).
       " On attempt to change unescaping -> run unit tests to check !
+      IF iv_no_encoding = abap_false.
+        <lv_substring> = cl_http_utility=>unescape_url( <lv_substring> ).
+      ENDIF.
 
       ls_field-name = substring_before(
         val = <lv_substring>
@@ -275,25 +274,16 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD parse_fields_upper_case_name.
-
-    rt_fields = parse_fields(
-      iv_string      = iv_string
-      iv_upper_cased = abap_true ).
-
-  ENDMETHOD.
-
-
   METHOD parse_post_form_data.
 
     DATA lv_serialized_post_data TYPE string.
 
     lv_serialized_post_data = translate_postdata( it_post_data ).
-    IF iv_upper_cased = abap_true.
-      rt_fields = parse_fields_upper_case_name( lv_serialized_post_data ).
-    ELSE.
-      rt_fields = parse_fields( lv_serialized_post_data ).
-    ENDIF.
+
+    rt_fields = parse_fields(
+       iv_string      = lv_serialized_post_data
+       iv_upper_cased = iv_upper_cased
+       iv_no_encoding = iv_no_encoding ).
 
   ENDMETHOD.
 
