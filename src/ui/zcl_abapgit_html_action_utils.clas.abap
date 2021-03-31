@@ -6,8 +6,8 @@ CLASS zcl_abapgit_html_action_utils DEFINITION
 
     CLASS-METHODS parse_post_form_data
       IMPORTING
-        !it_post_data TYPE zif_abapgit_html_viewer=>ty_post_data
-        !iv_upper_cased TYPE abap_bool DEFAULT abap_false
+        !it_post_data    TYPE zif_abapgit_html_viewer=>ty_post_data
+        !iv_upper_cased  TYPE abap_bool DEFAULT abap_false
       RETURNING
         VALUE(rt_fields) TYPE tihttpnvp .
     CLASS-METHODS parse_fields
@@ -23,7 +23,7 @@ CLASS zcl_abapgit_html_action_utils DEFINITION
         VALUE(rt_fields) TYPE tihttpnvp .
     CLASS-METHODS translate_postdata
       IMPORTING
-        !it_postdata TYPE zif_abapgit_html_viewer=>ty_post_data
+        !it_postdata     TYPE zif_abapgit_html_viewer=>ty_post_data
       RETURNING
         VALUE(rv_string) TYPE string .
 
@@ -79,11 +79,7 @@ CLASS zcl_abapgit_html_action_utils DEFINITION
         !ig_field TYPE any
       CHANGING
         !ct_field TYPE tihttpnvp .
-    CLASS-METHODS unescape
-      IMPORTING
-        !iv_string       TYPE string
-      RETURNING
-        VALUE(rv_string) TYPE string .
+
 ENDCLASS.
 
 
@@ -253,7 +249,7 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
     LOOP AT lt_substrings ASSIGNING <lv_substring>.
 
       CLEAR ls_field.
-      <lv_substring> = unescape( <lv_substring> ).
+      <lv_substring> = cl_http_utility=>unescape_url( <lv_substring> ).
       " On attempt to change unescaping -> run unit tests to check !
 
       ls_field-name = substring_before(
@@ -328,16 +324,4 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
 
   ENDMETHOD.
 
-
-  METHOD unescape.
-
-* do not use cl_http_utility as it does strange things with the encoding
-    rv_string = iv_string.
-
-* todo, more to be added here
-    REPLACE ALL OCCURRENCES OF '%3F' IN rv_string WITH '?'.
-    REPLACE ALL OCCURRENCES OF '%3D' IN rv_string WITH '='.
-    REPLACE ALL OCCURRENCES OF gv_non_breaking_space IN rv_string WITH ` `.
-
-  ENDMETHOD.
 ENDCLASS.
