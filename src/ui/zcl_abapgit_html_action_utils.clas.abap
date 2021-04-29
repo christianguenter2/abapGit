@@ -8,14 +8,14 @@ CLASS zcl_abapgit_html_action_utils DEFINITION
       IMPORTING
         !it_post_data    TYPE zif_abapgit_html_viewer=>ty_post_data
         !iv_upper_cased  TYPE abap_bool DEFAULT abap_false
-        iv_no_encoding   TYPE abap_bool DEFAULT abap_false
+        !iv_no_escaping  TYPE abap_bool DEFAULT abap_false
       RETURNING
         VALUE(rt_fields) TYPE tihttpnvp .
     CLASS-METHODS parse_fields
       IMPORTING
         !iv_string       TYPE clike
         !iv_upper_cased  TYPE abap_bool DEFAULT abap_false
-        iv_no_encoding   TYPE abap_bool DEFAULT abap_false
+        !iv_no_escaping  TYPE abap_bool DEFAULT abap_false
       RETURNING
         VALUE(rt_fields) TYPE tihttpnvp .
     CLASS-METHODS translate_postdata
@@ -247,7 +247,10 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
 
       CLEAR ls_field.
       " On attempt to change unescaping -> run unit tests to check !
-      IF iv_no_encoding = abap_false.
+
+      REPLACE ALL OCCURRENCES OF gv_non_breaking_space IN <lv_substring> WITH ` `.
+
+      IF iv_no_escaping = abap_false.
         <lv_substring> = cl_http_utility=>unescape_url( <lv_substring> ).
       ENDIF.
 
@@ -283,7 +286,7 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
     rt_fields = parse_fields(
        iv_string      = lv_serialized_post_data
        iv_upper_cased = iv_upper_cased
-       iv_no_encoding = iv_no_encoding ).
+       iv_no_escaping = iv_no_escaping ).
 
   ENDMETHOD.
 

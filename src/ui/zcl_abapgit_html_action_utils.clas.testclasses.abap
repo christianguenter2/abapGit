@@ -103,7 +103,7 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
 
     _given_string_is( `committer_name=Gustav Gans` ).
 
-    _when_fields_are_parsed_upper( ).
+    _when_fields_are_parsed( ).
 
     _then_fields_should_be( iv_index = 1
                             iv_name = `COMMITTER_NAME`
@@ -120,7 +120,7 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
                    && `author_name=Karl Klammer&`
                    && `author_email=karl@klammer.com` ).
 
-    _when_fields_are_parsed_upper( ).
+    _when_fields_are_parsed( ).
 
     _then_fields_should_be( iv_index = 1
                             iv_name  = `COMMITTER_NAME`
@@ -153,7 +153,7 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
     " file status = '?', used in staging page
     _given_string_is( '/SRC/ZFOOBAR.PROG.ABAP=%3F' ).
 
-    _when_fields_are_parsed_upper( ).
+    _when_fields_are_parsed( ).
     _then_field_count_should_be( 1 ).
 
     _then_fields_should_be(
@@ -172,17 +172,19 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
                    && zcl_abapgit_html_action_utils=>gv_non_breaking_space
                    && 'rf.sush.xml=A' ).
 
+*    _given_no_encoding( abap_true ).
+
     _when_fields_are_parsed( ).
     _then_field_count_should_be( 2 ).
 
     _then_fields_should_be(
       iv_index = 1
-      iv_name  = '/src/ztest_rfc.fugr.xml'
+      iv_name  = '/SRC/ZTEST_RFC.FUGR.XML'
       iv_value = '?' ).
 
     _then_fields_should_be(
       iv_index = 2
-      iv_name  = '/src/ztest_rfc   rf.sush.xml'
+      iv_name  = '/SRC/ZTEST_RFC   RF.SUSH.XML'
       iv_value = 'A' ).
 
   ENDMETHOD.
@@ -255,13 +257,7 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
     mt_parsed_fields = zcl_abapgit_html_action_utils=>parse_fields(
                            iv_string      = mv_given_parse_string
                            iv_upper_cased = abap_true
-                           iv_no_encoding = mv_given_no_encoding ).
-
-  ENDMETHOD.
-
-  METHOD _when_fields_are_parsed.
-
-    mt_parsed_fields = zcl_abapgit_html_action_utils=>parse_fields( mv_given_parse_string ).
+                           iv_no_escaping = mv_given_no_encoding ).
 
   ENDMETHOD.
 
@@ -308,11 +304,11 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
   METHOD parse_fields_wrong_format.
 
     _given_string_is( `some_query_string_without_param_structure` ).
-    _when_fields_are_parsed_upper( ).
+    _when_fields_are_parsed( ).
     _then_field_count_should_be( 0 ).
 
     _given_string_is( `some_query_string_without_param_structure&a=b` ).
-    _when_fields_are_parsed_upper( ).
+    _when_fields_are_parsed( ).
     _then_field_count_should_be( 1 ).
     _then_fields_should_be(
       iv_index = 1
