@@ -257,9 +257,9 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
   METHOD _when_fields_are_parsed.
 
     mt_parsed_fields = zcl_abapgit_html_action_utils=>parse_fields(
-                           iv_string     = mv_given_parse_string
-                           iv_upper_case = abap_true
-                           iv_escaped    = mv_given_escaped ).
+                           iv_string      = mv_given_parse_string
+                           iv_upper_cased = abap_true
+                           iv_escaped     = mv_given_escaped ).
 
   ENDMETHOD.
 

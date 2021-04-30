@@ -54,7 +54,7 @@ CLASS zcl_abapgit_html_action_utils DEFINITION
     CLASS-METHODS parse_fields
       IMPORTING
         iv_string        TYPE string
-        iv_upper_case    TYPE abap_bool DEFAULT abap_false
+        iv_upper_cased   TYPE abap_bool DEFAULT abap_false
         iv_escaped       TYPE abap_bool DEFAULT abap_true
       RETURNING
         VALUE(rt_fields) TYPE tihttpnvp.
@@ -233,7 +233,7 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
 
     rt_fields = cl_http_utility=>string_to_fields( lv_string ).
 
-    IF iv_upper_case = abap_true.
+    IF iv_upper_cased = abap_true.
       field_keys_to_upper( CHANGING ct_fields = rt_fields ).
     ENDIF.
 
@@ -243,9 +243,9 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
   METHOD parse_post_form_data.
 
     rt_fields = parse_fields(
-                  iv_string     = translate_postdata( it_post_data )
-                  iv_upper_case = iv_upper_cased
-                  iv_escaped    = iv_escaped ).
+                  iv_string      = translate_postdata( it_post_data )
+                  iv_upper_cased = iv_upper_cased
+                  iv_escaped     = iv_escaped ).
 
   ENDMETHOD.
 
