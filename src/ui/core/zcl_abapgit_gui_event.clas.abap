@@ -64,8 +64,8 @@ CLASS zcl_abapgit_gui_event IMPLEMENTATION.
     IF mo_form_data IS NOT BOUND.
       mo_form_data = fields_to_map(
         zcl_abapgit_html_action_utils=>parse_post_form_data(
-            it_post_data   = zif_abapgit_gui_event~mt_postdata
-            iv_no_escaping = iv_no_encoding ) ).
+            it_post_data = zif_abapgit_gui_event~mt_postdata
+            iv_escaped   = iv_escaped ) ).
       mo_form_data->freeze( ).
     ENDIF.
     ro_string_map = mo_form_data.

@@ -181,7 +181,7 @@ CLASS zcl_abapgit_gui_page_commit IMPLEMENTATION.
 
     DATA lo_map TYPE REF TO zcl_abapgit_string_map.
 
-    lo_map = ii_event->form_data( abap_true ).
+    lo_map = ii_event->form_data( abap_false ).
     lo_map->to_abap( CHANGING cs_container = rs_commit ).
     REPLACE ALL OCCURRENCES
       OF zif_abapgit_definitions=>c_crlf

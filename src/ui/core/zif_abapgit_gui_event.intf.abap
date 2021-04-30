@@ -15,7 +15,7 @@ INTERFACE zif_abapgit_gui_event
 
   METHODS form_data
     IMPORTING
-      iv_no_encoding       TYPE abap_bool OPTIONAL
+      iv_escaped           TYPE abap_bool DEFAULT abap_true
     RETURNING
       VALUE(ro_string_map) TYPE REF TO zcl_abapgit_string_map
     RAISING

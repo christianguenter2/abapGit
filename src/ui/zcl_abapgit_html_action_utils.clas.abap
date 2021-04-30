@@ -8,14 +8,7 @@ CLASS zcl_abapgit_html_action_utils DEFINITION
       IMPORTING
         !it_post_data    TYPE zif_abapgit_html_viewer=>ty_post_data
         !iv_upper_cased  TYPE abap_bool DEFAULT abap_false
-        !iv_no_escaping  TYPE abap_bool DEFAULT abap_false
-      RETURNING
-        VALUE(rt_fields) TYPE tihttpnvp .
-    CLASS-METHODS parse_fields
-      IMPORTING
-        !iv_string       TYPE clike
-        !iv_upper_cased  TYPE abap_bool DEFAULT abap_false
-        !iv_no_escaping  TYPE abap_bool DEFAULT abap_false
+        !iv_escaped      TYPE abap_bool DEFAULT abap_true
       RETURNING
         VALUE(rt_fields) TYPE tihttpnvp .
     CLASS-METHODS translate_postdata
@@ -41,7 +34,6 @@ CLASS zcl_abapgit_html_action_utils DEFINITION
         !iv_path         TYPE string
       RETURNING
         VALUE(rv_string) TYPE string .
-
     CLASS-METHODS file_encode
       IMPORTING
         !iv_key          TYPE zif_abapgit_persistence=>ty_repo-key
@@ -54,18 +46,21 @@ CLASS zcl_abapgit_html_action_utils DEFINITION
         !ig_object       TYPE any
       RETURNING
         VALUE(rv_string) TYPE string .
-
-    CLASS-METHODS class_constructor.
     CLASS-METHODS dbkey_encode
       IMPORTING
-        !is_key          TYPE zif_abapgit_persistence=>ty_content
+        is_key           TYPE zif_abapgit_persistence=>ty_content
       RETURNING
         VALUE(rv_string) TYPE string .
+    CLASS-METHODS parse_fields
+      IMPORTING
+        iv_string        TYPE string
+        iv_upper_case    TYPE abap_bool DEFAULT abap_false
+        iv_escaped       TYPE abap_bool DEFAULT abap_true
+      RETURNING
+        VALUE(rt_fields) TYPE tihttpnvp.
 
   PROTECTED SECTION.
   PRIVATE SECTION.
-    CLASS-DATA gv_non_breaking_space TYPE string.
-
     CLASS-METHODS field_keys_to_upper
       CHANGING
         !ct_fields TYPE tihttpnvp .
@@ -76,20 +71,11 @@ CLASS zcl_abapgit_html_action_utils DEFINITION
       CHANGING
         ct_field TYPE tihttpnvp .
 
-
 ENDCLASS.
 
 
 
 CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
-
-  METHOD class_constructor.
-
-    CONSTANTS lc_nbsp TYPE xstring VALUE 'C2A0'. " &nbsp;
-
-    gv_non_breaking_space = zcl_abapgit_convert=>xstring_to_string_utf8( lc_nbsp ).
-
-  ENDMETHOD.
 
 
   METHOD add_field.
@@ -235,42 +221,17 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
 
   METHOD parse_fields.
 
-    DATA:
-      lt_substrings TYPE string_table,
-      ls_field      LIKE LINE OF rt_fields.
+    DATA: lv_string TYPE string.
 
-    FIELD-SYMBOLS <lv_substring> LIKE LINE OF lt_substrings.
+    IF iv_escaped = abap_false.
+      lv_string = escape( val = iv_string format = cl_abap_format=>e_uri ).
+    ELSE.
+      lv_string = iv_string.
+    ENDIF.
 
-    SPLIT iv_string AT '&' INTO TABLE lt_substrings.
+    rt_fields = cl_http_utility=>string_to_fields( lv_string ).
 
-    LOOP AT lt_substrings ASSIGNING <lv_substring>.
-
-      CLEAR ls_field.
-      " On attempt to change unescaping -> run unit tests to check !
-
-      REPLACE ALL OCCURRENCES OF gv_non_breaking_space IN <lv_substring> WITH ` `.
-
-      IF iv_no_escaping = abap_false.
-        <lv_substring> = cl_http_utility=>unescape_url( <lv_substring> ).
-      ENDIF.
-
-      ls_field-name = substring_before(
-        val = <lv_substring>
-        sub = '=' ).
-
-      ls_field-value = substring_after(
-        val = <lv_substring>
-        sub = '=' ).
-
-      IF ls_field IS INITIAL. " Not a field with proper structure
-        CONTINUE.
-      ENDIF.
-
-      APPEND ls_field TO rt_fields.
-
-    ENDLOOP.
-
-    IF iv_upper_cased = abap_true.
+    IF iv_upper_case = abap_true.
       field_keys_to_upper( CHANGING ct_fields = rt_fields ).
     ENDIF.
 
@@ -279,14 +240,10 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
 
   METHOD parse_post_form_data.
 
-    DATA lv_serialized_post_data TYPE string.
-
-    lv_serialized_post_data = translate_postdata( it_post_data ).
-
     rt_fields = parse_fields(
-       iv_string      = lv_serialized_post_data
-       iv_upper_cased = iv_upper_cased
-       iv_no_escaping = iv_no_escaping ).
+                  iv_string     = translate_postdata( it_post_data )
+                  iv_upper_case = iv_upper_cased
+                  iv_escaped    = iv_escaped ).
 
   ENDMETHOD.
 
@@ -316,5 +273,4 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
       IN CHARACTER MODE.
 
   ENDMETHOD.
-
 ENDCLASS.

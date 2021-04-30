@@ -28,15 +28,13 @@ CLASS ltcl_html_action_utils DEFINITION FOR TESTING RISK LEVEL HARMLESS
                 END OF gs_german_umlaut_as_char.
 
     DATA mv_given_parse_string TYPE string.
-    DATA mv_given_no_encoding TYPE abap_bool.
     DATA mt_parsed_fields TYPE tihttpnvp.
+    DATA mv_given_escaped TYPE abap_bool VALUE abap_true.
 
     METHODS _given_string_is
       IMPORTING
         iv_string TYPE string.
-    METHODS _given_no_encoding
-      IMPORTING
-        iv_no_encoding TYPE abap_bool.
+
     METHODS _when_fields_are_parsed.
     METHODS _then_fields_should_be
       IMPORTING
@@ -46,6 +44,9 @@ CLASS ltcl_html_action_utils DEFINITION FOR TESTING RISK LEVEL HARMLESS
     METHODS _then_field_count_should_be
       IMPORTING
         iv_count TYPE i.
+    METHODS _given_escaped
+      IMPORTING
+        iv_given_escaped TYPE abap_bool.
 
     CLASS-METHODS _hex_to_char
       IMPORTING
@@ -165,11 +166,17 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
 
   METHOD parse_fields_unescape_nbsp.
 
+    CONSTANTS lc_nbsp TYPE xstring VALUE 'C2A0'. " &nbsp;
+
+    DATA: lv_non_breaking_space TYPE string.
+
+    lv_non_breaking_space =  zcl_abapgit_convert=>xstring_to_string_utf8( lc_nbsp ).
+
     " non-breaking space (&nbsp;)
     _given_string_is( '/src/ztest_rfc.fugr.xml=%3F&/src/ztest_rfc'
-                   && zcl_abapgit_html_action_utils=>gv_non_breaking_space
-                   && zcl_abapgit_html_action_utils=>gv_non_breaking_space
-                   && zcl_abapgit_html_action_utils=>gv_non_breaking_space
+                   && cl_http_utility=>escape_url( lv_non_breaking_space )
+                   && cl_http_utility=>escape_url( lv_non_breaking_space )
+                   && cl_http_utility=>escape_url( lv_non_breaking_space )
                    && 'rf.sush.xml=A' ).
 
     _when_fields_are_parsed( ).
@@ -182,7 +189,11 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
 
     _then_fields_should_be(
       iv_index = 2
-      iv_name  = '/SRC/ZTEST_RFC   RF.SUSH.XML'
+      iv_name  = '/SRC/ZTEST_RFC'
+              && lv_non_breaking_space
+              && lv_non_breaking_space
+              && lv_non_breaking_space
+              && 'RF.SUSH.XML'
       iv_value = 'A' ).
 
   ENDMETHOD.
@@ -194,6 +205,10 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
           lv_ue       TYPE string,
           lv_ae_oe_ue TYPE string.
 
+
+*    lv_ae = cl_http_utility=>escape_url( gs_german_umlaut_as_char-lower_case_ae ).
+*    lv_oe = cl_http_utility=>escape_url( gs_german_umlaut_as_char-lower_case_oe ).
+*    lv_ue = cl_http_utility=>escape_url( gs_german_umlaut_as_char-lower_case_ue ).
 
     lv_ae = gs_german_umlaut_as_char-lower_case_ae.
     lv_oe = gs_german_umlaut_as_char-lower_case_oe.
@@ -208,7 +223,7 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
                    && |author_name=Gerd Schr{ lv_oe }der&|
                    && |author_email=gerd@schroeder.com| ).
 
-    _given_no_encoding( abap_true ).
+    _given_escaped( abap_false ).
 
     _when_fields_are_parsed( ).
 
@@ -244,18 +259,12 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
 
   ENDMETHOD.
 
-  METHOD _given_no_encoding.
-
-    mv_given_no_encoding = iv_no_encoding.
-
-  ENDMETHOD.
-
   METHOD _when_fields_are_parsed.
 
     mt_parsed_fields = zcl_abapgit_html_action_utils=>parse_fields(
-                           iv_string      = mv_given_parse_string
-                           iv_upper_cased = abap_true
-                           iv_no_escaping = mv_given_no_encoding ).
+                           iv_string     = mv_given_parse_string
+                           iv_upper_case = abap_true
+                           iv_escaped    = mv_given_escaped ).
 
   ENDMETHOD.
 
@@ -303,13 +312,21 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
 
     _given_string_is( `some_query_string_without_param_structure` ).
     _when_fields_are_parsed( ).
-    _then_field_count_should_be( 0 ).
-
-    _given_string_is( `some_query_string_without_param_structure&a=b` ).
-    _when_fields_are_parsed( ).
     _then_field_count_should_be( 1 ).
     _then_fields_should_be(
       iv_index = 1
+      iv_name  = 'SOME_QUERY_STRING_WITHOUT_PARAM_STRUCTURE'
+      iv_value = '' ).
+
+    _given_string_is( `some_query_string_without_param_structure&a=b` ).
+    _when_fields_are_parsed( ).
+    _then_field_count_should_be( 2 ).
+    _then_fields_should_be(
+      iv_index = 1
+      iv_name  = 'SOME_QUERY_STRING_WITHOUT_PARAM_STRUCTURE'
+      iv_value = '' ).
+    _then_fields_should_be(
+      iv_index = 2
       iv_name  = 'A'
       iv_value = 'b' ).
 
@@ -354,6 +371,13 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
       iv_index = 2
       iv_name  = |{ to_upper( lv_long_name ) }|
       iv_value = 'y' ).
+
+  ENDMETHOD.
+
+
+  METHOD _given_escaped.
+
+    mv_given_escaped = iv_given_escaped.
 
   ENDMETHOD.
 
