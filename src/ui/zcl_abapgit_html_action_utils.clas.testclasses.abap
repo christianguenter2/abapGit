@@ -172,8 +172,6 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
                    && zcl_abapgit_html_action_utils=>gv_non_breaking_space
                    && 'rf.sush.xml=A' ).
 
-*    _given_no_encoding( abap_true ).
-
     _when_fields_are_parsed( ).
     _then_field_count_should_be( 2 ).
 
