@@ -224,7 +224,9 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
     DATA: lv_string TYPE string.
 
     IF iv_escaped = abap_false.
-      lv_string = escape( val = iv_string format = cl_abap_format=>e_uri ).
+      lv_string = escape(
+                    val    = iv_string
+                    format = cl_abap_format=>e_uri ).
     ELSE.
       lv_string = iv_string.
     ENDIF.

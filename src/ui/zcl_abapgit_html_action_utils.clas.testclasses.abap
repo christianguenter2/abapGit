@@ -205,11 +205,6 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
           lv_ue       TYPE string,
           lv_ae_oe_ue TYPE string.
 
-
-*    lv_ae = cl_http_utility=>escape_url( gs_german_umlaut_as_char-lower_case_ae ).
-*    lv_oe = cl_http_utility=>escape_url( gs_german_umlaut_as_char-lower_case_oe ).
-*    lv_ue = cl_http_utility=>escape_url( gs_german_umlaut_as_char-lower_case_ue ).
-
     lv_ae = gs_german_umlaut_as_char-lower_case_ae.
     lv_oe = gs_german_umlaut_as_char-lower_case_oe.
     lv_ue = gs_german_umlaut_as_char-lower_case_ue.
