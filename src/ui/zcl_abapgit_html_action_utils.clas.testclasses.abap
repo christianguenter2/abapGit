@@ -168,15 +168,18 @@ CLASS ltcl_html_action_utils IMPLEMENTATION.
 
     CONSTANTS lc_nbsp TYPE xstring VALUE 'C2A0'. " &nbsp;
 
-    DATA: lv_non_breaking_space TYPE string.
+    DATA:
+      lv_non_breaking_space         TYPE string,
+      lv_non_breaking_space_escaped TYPE string.
 
     lv_non_breaking_space =  zcl_abapgit_convert=>xstring_to_string_utf8( lc_nbsp ).
+    lv_non_breaking_space_escaped = cl_http_utility=>escape_url( lv_non_breaking_space ).
 
     " non-breaking space (&nbsp;)
     _given_string_is( '/src/ztest_rfc.fugr.xml=%3F&/src/ztest_rfc'
-                   && cl_http_utility=>escape_url( lv_non_breaking_space )
-                   && cl_http_utility=>escape_url( lv_non_breaking_space )
-                   && cl_http_utility=>escape_url( lv_non_breaking_space )
+                   && lv_non_breaking_space_escaped
+                   && lv_non_breaking_space_escaped
+                   && lv_non_breaking_space_escaped
                    && 'rf.sush.xml=A' ).
 
     _when_fields_are_parsed( ).

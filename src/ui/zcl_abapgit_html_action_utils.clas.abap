@@ -221,17 +221,17 @@ CLASS zcl_abapgit_html_action_utils IMPLEMENTATION.
 
   METHOD parse_fields.
 
-    DATA: lv_string TYPE string.
+    DATA: lv_escaped_string TYPE string.
 
-    IF iv_escaped = abap_false.
-      lv_string = escape(
-                    val    = iv_string
-                    format = cl_abap_format=>e_uri ).
+    IF iv_escaped = abap_true.
+      lv_escaped_string = iv_string.
     ELSE.
-      lv_string = iv_string.
+      lv_escaped_string = escape(
+                            val    = iv_string
+                            format = cl_abap_format=>e_uri ).
     ENDIF.
 
-    rt_fields = cl_http_utility=>string_to_fields( lv_string ).
+    rt_fields = cl_http_utility=>string_to_fields( lv_escaped_string ).
 
     IF iv_upper_cased = abap_true.
       field_keys_to_upper( CHANGING ct_fields = rt_fields ).
