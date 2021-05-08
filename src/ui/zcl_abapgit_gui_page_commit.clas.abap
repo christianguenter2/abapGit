@@ -181,6 +181,8 @@ CLASS zcl_abapgit_gui_page_commit IMPLEMENTATION.
 
     DATA lo_map TYPE REF TO zcl_abapgit_string_map.
 
+    " Commit requests form data is not escaped. It's unknown why.
+    " As long as this is the case we need to let the parser know.
     lo_map = ii_event->form_data( abap_false ).
     lo_map->to_abap( CHANGING cs_container = rs_commit ).
     REPLACE ALL OCCURRENCES
