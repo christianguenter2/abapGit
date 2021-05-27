@@ -19,7 +19,7 @@ CLASS zcl_abapgit_pr_enumerator DEFINITION
 
     CLASS-METHODS new
       IMPORTING
-        io_repo TYPE REF TO zcl_abapgit_repo
+        io_repo            TYPE REF TO zcl_abapgit_repo
       RETURNING
         VALUE(ro_instance) TYPE REF TO zcl_abapgit_pr_enumerator
       RAISING
@@ -32,7 +32,7 @@ CLASS zcl_abapgit_pr_enumerator DEFINITION
 
     CLASS-METHODS create_provider
       IMPORTING
-        iv_repo_url TYPE string
+        iv_repo_url        TYPE string
       RETURNING
         VALUE(ri_provider) TYPE REF TO zif_abapgit_pr_enum_provider
       RAISING
@@ -42,7 +42,7 @@ ENDCLASS.
 
 
 
-CLASS ZCL_ABAPGIT_PR_ENUMERATOR IMPLEMENTATION.
+CLASS zcl_abapgit_pr_enumerator IMPLEMENTATION.
 
 
   METHOD constructor.
@@ -55,10 +55,8 @@ CLASS ZCL_ABAPGIT_PR_ENUMERATOR IMPLEMENTATION.
 
     lo_repo_online ?= io_repo.
     mv_repo_url     = to_lower( lo_repo_online->get_url( ) ).
-    TRY.
-        mi_enum_provider = create_provider( mv_repo_url ).
-      CATCH zcx_abapgit_exception.
-    ENDTRY.
+
+    mi_enum_provider = create_provider( mv_repo_url ).
 
   ENDMETHOD.
 
@@ -81,13 +79,29 @@ CLASS ZCL_ABAPGIT_PR_ENUMERATOR IMPLEMENTATION.
         with = '' ).
       CREATE OBJECT ri_provider TYPE zcl_abapgit_pr_enum_github
         EXPORTING
-          iv_user_and_repo  = |{ lv_user }/{ lv_repo }|
-          ii_http_agent     = li_agent.
-    ELSE.
-      zcx_abapgit_exception=>raise( |PR enumeration is not supported for { iv_repo_url }| ).
+          iv_user_and_repo = |{ lv_user }/{ lv_repo }|
+          ii_http_agent    = li_agent.
+      RETURN.
+    ENDIF.
+
+    FIND ALL OCCURRENCES OF REGEX 'gitlab\.com\/([^\/]+)\/([^\/]+)'
+      IN iv_repo_url
+      SUBMATCHES lv_user lv_repo.
+    IF sy-subrc = 0.
+      lv_repo = replace(
+        val = lv_repo
+        regex = '\.git$'
+        with = '' ).
+      CREATE OBJECT ri_provider TYPE zcl_abapgit_pr_enum_gitlab
+        EXPORTING
+          iv_user       = lv_user
+          iv_repo       = lv_repo
+          ii_http_agent = li_agent.
+      RETURN.
     ENDIF.
 
     " TODO somewhen more providers
+    zcx_abapgit_exception=>raise( |PR enumeration is not supported for { iv_repo_url }| ).
 
   ENDMETHOD.
 
