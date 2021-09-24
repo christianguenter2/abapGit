@@ -1,0 +1,9 @@
+"Name: \TY:CL_PXN_INTERFACE\IN:IF_PXN_CONFIGURATION\ME:GET_SECURITY_LEVEL\SE:END\EI
+ENHANCEMENT 0 Z_ENH_ABAPGIT_CL_PXN_INTERFACE.
+
+    IF level IS INITIAL
+    AND zcl_abapgit_call_stack=>is_called_from_abapgit( ).
+      level = 'NO'.
+    ENDIF.
+
+ENDENHANCEMENT.
