@@ -130,8 +130,7 @@ CLASS zcl_abapgit_git_branch_list IMPLEMENTATION.
         WITH TABLE KEY name_key
         COMPONENTS name = iv_branch_name.
       IF sy-subrc <> 0.
-        zcx_abapgit_exception=>raise( |Branch { get_display_name( iv_branch_name )
-          } not found. Use 'Branch' > 'Switch' to select a different branch| ).
+        zcx_abapgit_exception=>raise( |Branch { get_display_name( iv_branch_name ) } not found| ).
       ENDIF.
 
     ENDIF.

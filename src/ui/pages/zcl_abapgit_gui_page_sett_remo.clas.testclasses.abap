@@ -52,12 +52,16 @@ CLASS ltcl_validate_form DEFINITION FINAL FOR TESTING
       valid_url_no_head_type FOR TESTING RAISING cx_static_check,
 
       invalid_branch FOR TESTING RAISING cx_static_check,
+      valid_branch2 FOR TESTING RAISING cx_static_check,
       valid_branch FOR TESTING RAISING cx_static_check,
 
       invalid_tag FOR TESTING RAISING cx_static_check,
+      valid_tag2 FOR TESTING RAISING cx_static_check,
       valid_tag FOR TESTING RAISING cx_static_check,
 
       invalid_pull_request FOR TESTING RAISING cx_static_check,
+      invalid_pull_request2 FOR TESTING RAISING cx_static_check,
+      invalid_pull_request3 FOR TESTING RAISING cx_static_check,
       valid_pull_request FOR TESTING RAISING cx_static_check,
 
       invalid_commit FOR TESTING RAISING cx_static_check,
@@ -82,6 +86,10 @@ CLASS ltd_git_transport IMPLEMENTATION.
 
     CONSTANTS: lc_dummy_data TYPE string VALUE '0000'.
 
+    IF iv_url IS INITIAL.
+      RAISE EXCEPTION TYPE zcx_abapgit_exception.
+    ENDIF.
+
     CREATE OBJECT ro_branch_list TYPE ltd_branch_list
       EXPORTING
         iv_data = lc_dummy_data.
@@ -105,7 +113,9 @@ CLASS ltd_branch_list IMPLEMENTATION.
     IF iv_branch_name CS 'feature'
     OR iv_branch_name CS 'inv_tag'
     OR iv_branch_name CS 'inv_pr'
-    OR iv_branch_name IS INITIAL.
+    OR iv_branch_name IS INITIAL
+    OR match( val   = iv_branch_name
+              regex = `(.*)\s+$` ) > 0.
       RAISE EXCEPTION TYPE zcx_abapgit_exception.
     ENDIF.
 
@@ -133,7 +143,7 @@ CLASS ltcl_validate_form IMPLEMENTATION.
 
     CREATE OBJECT mo_given_form_data.
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-branch
+        iv_key = const=>id-branch
         iv_val = 'main' ).
 
     CREATE OBJECT mo_cut EXPORTING io_repo = mo_repo.
@@ -155,7 +165,7 @@ CLASS ltcl_validate_form IMPLEMENTATION.
   METHOD switch_to_offline_no_error.
 
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-offline
+        iv_key = const=>id-offline
         iv_val = abap_true ).
     when_validate_form( ).
     then_no_error_shd_occur( ).
@@ -166,14 +176,14 @@ CLASS ltcl_validate_form IMPLEMENTATION.
   METHOD invalid_url.
 
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-offline
+        iv_key = const=>id-offline
         iv_val = abap_false
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-url
+        iv_key = const=>id-url
         iv_val = 'http://test' ).
 
     when_validate_form( ).
-    then_error_shd_occur( zcl_abapgit_gui_page_sett_remo=>c_id-url ).
+    then_error_shd_occur( const=>id-url ).
 
   ENDMETHOD.
 
@@ -181,14 +191,14 @@ CLASS ltcl_validate_form IMPLEMENTATION.
   METHOD invalid_url2.
 
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-offline
+        iv_key = const=>id-offline
         iv_val = abap_false
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-url
+        iv_key = const=>id-url
         iv_val = 'test' ).
 
     when_validate_form( ).
-    then_error_shd_occur( zcl_abapgit_gui_page_sett_remo=>c_id-url ).
+    then_error_shd_occur( const=>id-url ).
 
   ENDMETHOD.
 
@@ -196,14 +206,14 @@ CLASS ltcl_validate_form IMPLEMENTATION.
   METHOD valid_url_no_head_type.
 
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-offline
+        iv_key = const=>id-offline
         iv_val = abap_false
      )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-url
+        iv_key = const=>id-url
         iv_val = c_git_repo_url ).
 
     when_validate_form( ).
-    then_error_shd_occur( zcl_abapgit_gui_page_sett_remo=>c_id-head_type ).
+    then_error_shd_occur( const=>id-head_type ).
 
   ENDMETHOD.
 
@@ -211,20 +221,20 @@ CLASS ltcl_validate_form IMPLEMENTATION.
   METHOD invalid_branch.
 
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-offline
+        iv_key = const=>id-offline
         iv_val = abap_false
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-url
+        iv_key = const=>id-url
         iv_val = c_git_repo_url
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-head_type
-        iv_val = zcl_abapgit_gui_page_sett_remo=>c_head_types-branch
+        iv_key = const=>id-head_type
+        iv_val = const=>head_types-branch
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-branch
+        iv_key = const=>id-branch
         iv_val = 'feature' ).
 
     when_validate_form( ).
-    then_error_shd_occur( zcl_abapgit_gui_page_sett_remo=>c_id-branch ).
+    then_error_shd_occur( const=>id-branch ).
 
   ENDMETHOD.
 
@@ -232,17 +242,38 @@ CLASS ltcl_validate_form IMPLEMENTATION.
   METHOD valid_branch.
 
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-offline
+        iv_key = const=>id-offline
         iv_val = abap_false
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-url
+        iv_key = const=>id-url
         iv_val = c_git_repo_url
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-head_type
-        iv_val = zcl_abapgit_gui_page_sett_remo=>c_head_types-branch
+        iv_key = const=>id-head_type
+        iv_val = const=>head_types-branch
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-branch
+        iv_key = const=>id-branch
         iv_val = 'main' ).
+
+    when_validate_form( ).
+    then_no_error_shd_occur( ).
+
+  ENDMETHOD.
+
+
+  METHOD valid_branch2.
+
+    mo_given_form_data->set(
+        iv_key = const=>id-offline
+        iv_val = abap_false
+      )->set(
+        iv_key = const=>id-url
+        iv_val = c_git_repo_url
+      )->set(
+        iv_key = const=>id-head_type
+        iv_val = const=>head_types-branch
+      )->set(
+        iv_key = const=>id-branch
+        iv_val = | main   | ).
 
     when_validate_form( ).
     then_no_error_shd_occur( ).
@@ -253,20 +284,20 @@ CLASS ltcl_validate_form IMPLEMENTATION.
   METHOD invalid_tag.
 
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-offline
+        iv_key = const=>id-offline
         iv_val = abap_false
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-url
+        iv_key = const=>id-url
         iv_val = c_git_repo_url
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-head_type
-        iv_val = zcl_abapgit_gui_page_sett_remo=>c_head_types-tag
+        iv_key = const=>id-head_type
+        iv_val = const=>head_types-tag
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-tag
+        iv_key = const=>id-tag
         iv_val = 'inv_tag' ).
 
     when_validate_form( ).
-    then_error_shd_occur( zcl_abapgit_gui_page_sett_remo=>c_id-tag ).
+    then_error_shd_occur( const=>id-tag ).
 
   ENDMETHOD.
 
@@ -274,17 +305,38 @@ CLASS ltcl_validate_form IMPLEMENTATION.
   METHOD valid_tag.
 
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-offline
+        iv_key = const=>id-offline
         iv_val = abap_false
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-url
+        iv_key = const=>id-url
         iv_val = c_git_repo_url
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-head_type
-        iv_val = zcl_abapgit_gui_page_sett_remo=>c_head_types-tag
+        iv_key = const=>id-head_type
+        iv_val = const=>head_types-tag
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-tag
+        iv_key = const=>id-tag
         iv_val = 'v1.1.3' ).
+
+    when_validate_form( ).
+    then_no_error_shd_occur( ).
+
+  ENDMETHOD.
+
+
+  METHOD valid_tag2.
+
+    mo_given_form_data->set(
+        iv_key = const=>id-offline
+        iv_val = abap_false
+      )->set(
+        iv_key = const=>id-url
+        iv_val = c_git_repo_url
+      )->set(
+        iv_key = const=>id-head_type
+        iv_val = const=>head_types-tag
+      )->set(
+        iv_key = const=>id-tag
+        iv_val = |v1.1.3   | ).
 
     when_validate_form( ).
     then_no_error_shd_occur( ).
@@ -295,20 +347,62 @@ CLASS ltcl_validate_form IMPLEMENTATION.
   METHOD invalid_pull_request.
 
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-offline
+        iv_key = const=>id-offline
         iv_val = abap_false
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-url
+        iv_key = const=>id-url
         iv_val = c_git_repo_url
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-head_type
-        iv_val = zcl_abapgit_gui_page_sett_remo=>c_head_types-pull_request
+        iv_key = const=>id-head_type
+        iv_val = const=>head_types-pull_request
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-pull_request
-        iv_val = 'x@inv_pr' ).
+        iv_key = const=>id-pull_request
+        iv_val = 'x@pr' ).
 
     when_validate_form( ).
-    then_error_shd_occur( zcl_abapgit_gui_page_sett_remo=>c_id-pull_request ).
+    then_error_shd_occur( const=>id-pull_request ).
+
+  ENDMETHOD.
+
+
+  METHOD invalid_pull_request2.
+
+    mo_given_form_data->set(
+        iv_key = const=>id-offline
+        iv_val = abap_false
+      )->set(
+        iv_key = const=>id-url
+        iv_val = c_git_repo_url
+      )->set(
+        iv_key = const=>id-head_type
+        iv_val = const=>head_types-pull_request
+      )->set(
+        iv_key = const=>id-pull_request
+        iv_val = 'https://github.com/abapGit/abapGit@inv_pr' ).
+
+    when_validate_form( ).
+    then_error_shd_occur( const=>id-pull_request ).
+
+  ENDMETHOD.
+
+
+  METHOD invalid_pull_request3.
+
+    mo_given_form_data->set(
+        iv_key = const=>id-offline
+        iv_val = abap_false
+      )->set(
+        iv_key = const=>id-url
+        iv_val = c_git_repo_url
+      )->set(
+        iv_key = const=>id-head_type
+        iv_val = const=>head_types-pull_request
+      )->set(
+        iv_key = const=>id-pull_request
+        iv_val = 'https://github.com/abapGit/abapGit@' ).
+
+    when_validate_form( ).
+    then_error_shd_occur( const=>id-pull_request ).
 
   ENDMETHOD.
 
@@ -316,17 +410,17 @@ CLASS ltcl_validate_form IMPLEMENTATION.
   METHOD valid_pull_request.
 
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-offline
+        iv_key = const=>id-offline
         iv_val = abap_false
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-url
+        iv_key = const=>id-url
         iv_val = c_git_repo_url
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-head_type
-        iv_val = zcl_abapgit_gui_page_sett_remo=>c_head_types-pull_request
+        iv_key = const=>id-head_type
+        iv_val = const=>head_types-pull_request
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-pull_request
-        iv_val = 'x@pr' ).
+        iv_key = const=>id-pull_request
+        iv_val = 'https://github.com/abapGit/abapGit@pr' ).
 
     when_validate_form( ).
     then_no_error_shd_occur( ).
@@ -337,20 +431,20 @@ CLASS ltcl_validate_form IMPLEMENTATION.
   METHOD invalid_commit.
 
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-offline
+        iv_key = const=>id-offline
         iv_val = abap_false
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-url
+        iv_key = const=>id-url
         iv_val = c_git_repo_url
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-head_type
-        iv_val = zcl_abapgit_gui_page_sett_remo=>c_head_types-commit
+        iv_key = const=>id-head_type
+        iv_val = const=>head_types-commit
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-commit
+        iv_key = const=>id-commit
         iv_val = 'ABCD1234' ).
 
     when_validate_form( ).
-    then_error_shd_occur( zcl_abapgit_gui_page_sett_remo=>c_id-commit ).
+    then_error_shd_occur( const=>id-commit ).
 
   ENDMETHOD.
 
@@ -358,16 +452,16 @@ CLASS ltcl_validate_form IMPLEMENTATION.
   METHOD valid_commit.
 
     mo_given_form_data->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-offline
+        iv_key = const=>id-offline
         iv_val = abap_false
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-url
+        iv_key = const=>id-url
         iv_val = c_git_repo_url
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-head_type
-        iv_val = zcl_abapgit_gui_page_sett_remo=>c_head_types-commit
+        iv_key = const=>id-head_type
+        iv_val = const=>head_types-commit
       )->set(
-        iv_key = zcl_abapgit_gui_page_sett_remo=>c_id-commit
+        iv_key = const=>id-commit
         iv_val = '1d4abf5342a939202ae24ab4a5ad78da3cad24fb' ).
 
     when_validate_form( ).
