@@ -90,7 +90,7 @@ CLASS zcl_abapgit_stage IMPLEMENTATION.
     FIELD-SYMBOLS: <ls_stage> LIKE LINE OF mt_stage.
 
 
-    READ TABLE mt_stage WITH KEY
+    READ TABLE mt_stage WITH TABLE KEY
       file-path     = iv_path
       file-filename = iv_filename
       ASSIGNING <ls_stage>.

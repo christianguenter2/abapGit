@@ -20,11 +20,14 @@ CLASS ltd_repo DEFINITION FINAL FOR TESTING
 
   PUBLIC SECTION.
     INTERFACES zif_abapgit_repo.
-
-    DATA ms_data TYPE zif_abapgit_persistence=>ty_repo READ-ONLY.
+    METHODS constructor
+      IMPORTING
+        iv_key     TYPE zif_abapgit_persistence=>ty_repo-key
+        iv_package TYPE zif_abapgit_persistence=>ty_repo-package.
 
     METHODS set_display_name
-      IMPORTING !iv_display_name TYPE csequence.
+      IMPORTING iv_display_name TYPE csequence.
+
 ENDCLASS.
 
 
@@ -100,8 +103,21 @@ CLASS ltd_repo_srv IMPLEMENTATION.
 
   METHOD add_repository.
     DATA lo_new_repo TYPE REF TO ltd_repo.
+    DATA lv_key TYPE zif_abapgit_persistence=>ty_repo-key.
+    DATA lv_package TYPE zif_abapgit_persistence=>ty_repo-package.
 
-    CREATE OBJECT lo_new_repo.
+    lv_key = lines( mt_repositories ) + 1.
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+      EXPORTING
+        input  = lv_key
+      IMPORTING
+        output = lv_key.
+    CONCATENATE 'ZTEST_REPO_' lv_key INTO lv_package.
+
+    CREATE OBJECT lo_new_repo
+      EXPORTING
+        iv_key     = lv_key
+        iv_package = lv_package.
     lo_new_repo->set_display_name( iv_display_name ).
 
     APPEND lo_new_repo TO mt_repositories.
@@ -174,12 +190,17 @@ ENDCLASS.
 
 CLASS ltd_repo IMPLEMENTATION.
 
+  METHOD constructor.
+    zif_abapgit_repo~ms_data-key = iv_key.
+    zif_abapgit_repo~ms_data-package = iv_package.
+  ENDMETHOD.
+
   METHOD set_display_name.
-    ms_data-local_settings-display_name = iv_display_name.
+    zif_abapgit_repo~ms_data-local_settings-display_name = iv_display_name.
   ENDMETHOD.
 
   METHOD zif_abapgit_repo~get_name.
-    rv_name = ms_data-local_settings-display_name.
+    rv_name = zif_abapgit_repo~ms_data-local_settings-display_name.
   ENDMETHOD.
 
   METHOD zif_abapgit_repo~get_files_local_filtered.
