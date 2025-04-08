@@ -314,7 +314,7 @@ CLASS zcl_abapgit_persistence_repo IMPLEMENTATION.
 
     lt_repo = zif_abapgit_persist_repo~list( ).
 
-    READ TABLE lt_repo INTO rs_repo WITH KEY key = iv_key.
+    READ TABLE lt_repo INTO rs_repo WITH TABLE KEY key COMPONENTS key = iv_key.
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE zcx_abapgit_not_found.
     ENDIF.

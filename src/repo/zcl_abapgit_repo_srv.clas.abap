@@ -186,7 +186,7 @@ CLASS zcl_abapgit_repo_srv IMPLEMENTATION.
     LOOP AT mt_list INTO li_repo.
       lv_repo_index = sy-tabix.
 
-      READ TABLE lt_list TRANSPORTING NO FIELDS WITH KEY package = li_repo->get_package( ).
+      READ TABLE lt_list TRANSPORTING NO FIELDS WITH TABLE KEY package COMPONENTS package = li_repo->get_package( ).
       IF sy-subrc = 0.
         DELETE lt_list INDEX sy-tabix.
         CONTINUE. " Leave the repo be
@@ -412,7 +412,7 @@ CLASS zcl_abapgit_repo_srv IMPLEMENTATION.
 
     " check if package is already in use for a different repository
     lt_repos = zcl_abapgit_persist_factory=>get_repo( )->list( ).
-    READ TABLE lt_repos WITH KEY package = iv_package ASSIGNING <ls_repo>.
+    READ TABLE lt_repos WITH KEY package COMPONENTS package = iv_package ASSIGNING <ls_repo>.
     IF sy-subrc = 0.
       ei_repo = get_instance( )->get( <ls_repo>-key ).
       lv_name = ei_repo->get_name( ).
