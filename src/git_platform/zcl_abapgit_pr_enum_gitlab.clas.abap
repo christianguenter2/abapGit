@@ -122,7 +122,7 @@ CLASS zcl_abapgit_pr_enum_gitlab IMPLEMENTATION.
       <ls_p>-base_url        = ii_json->get( |/{ lv_i }/web_url| ).
       <ls_p>-number          = ii_json->get( |/{ lv_i }/iid| ).
       <ls_p>-title           = ii_json->get( |/{ lv_i }/title| ).
-      <ls_p>-user            = ii_json->get( |/{ lv_i }/author/name| ).
+      <ls_p>-user            = ii_json->get( |/{ lv_i }/author/username| ).
       <ls_p>-head_url        = ii_json->get( |/{ lv_i }/head/repo/clone_url| ).
       <ls_p>-head_branch     = ii_json->get( |/{ lv_i }/source_branch| ).
       <ls_p>-created_at      = ii_json->get( |/{ lv_i }/created_at| ).
