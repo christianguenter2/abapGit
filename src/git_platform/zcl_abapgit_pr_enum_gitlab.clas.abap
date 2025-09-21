@@ -55,30 +55,26 @@ CLASS zcl_abapgit_pr_enum_gitlab IMPLEMENTATION.
 
   METHOD zif_abapgit_pr_enum_provider~list_pull_requests.
 
-    DATA: lx_ajson TYPE REF TO zcx_abapgit_ajson_error.
+    DATA:
+      lx_ajson      TYPE REF TO zcx_abapgit_ajson_error,
+      lv_project_id TYPE string,
+      lv_url        TYPE string,
+      li_response   TYPE REF TO zif_abapgit_http_response.
 
-    DATA(project_id) = get_project_id( ).
+    lv_project_id = get_project_id( ).
 
     " https://gitlab.com/api/v4/projects/15406525/merge_requests
 
-    DATA(lv_url) = |https://gitlab.com/api/v4/projects/{ project_id }/merge_requests?state=opened|.
+    lv_url = |https://gitlab.com/api/v4/projects/{ lv_project_id }/merge_requests?state=opened|.
 
-    DATA(response) = mi_http_agent->request( lv_url ).
+    li_response = mi_http_agent->request( lv_url ).
 
-    IF response->is_ok( ) = abap_false.
+    IF li_response->is_ok( ) = abap_false.
       RETURN.
     ENDIF.
 
     TRY.
-
-*        DATA(pulls) = response->json( ).
-*        DATA(items) = pulls->members( '/' ).
-*
-*        LOOP AT items ASSIGNING FIELD-SYMBOL(<item>).
-*          APPEND INITIAL LINE TO rt_pulls ASSIGNING <ls_p>.
-*          <ls_p>-number = ii_json->get( |/{ lv_i }/number| ).
-*        ENDLOOP.
-        rt_pulls = convert_list( response->json( ) ).
+        rt_pulls = convert_list( li_response->json( ) ).
 
       CATCH zcx_abapgit_ajson_error INTO lx_ajson.
         zcx_abapgit_exception=>raise_with_text( lx_ajson ).
@@ -89,18 +85,22 @@ CLASS zcl_abapgit_pr_enum_gitlab IMPLEMENTATION.
 
 
   METHOD get_project_id.
-    DATA: lx_ajson TYPE REF TO zcx_abapgit_ajson_error.
 
-    DATA(lv_url) = |https://gitlab.com/api/v4/projects/{ cl_http_utility=>escape_url( mv_user_and_repo ) }|.
+    DATA:
+      lx_ajson    TYPE REF TO zcx_abapgit_ajson_error,
+      lv_url      TYPE string,
+      li_response TYPE REF TO zif_abapgit_http_response.
 
-    DATA(response) = mi_http_agent->request( lv_url ).
+    lv_url = |https://gitlab.com/api/v4/projects/{ cl_http_utility=>escape_url( mv_user_and_repo ) }|.
 
-    IF response->is_ok( ) = abap_false.
+    li_response = mi_http_agent->request( lv_url ).
+
+    IF li_response->is_ok( ) = abap_false.
       RETURN.
     ENDIF.
 
     TRY.
-        rv_project_id = response->json( )->get( '/id' ).
+        rv_project_id = li_response->json( )->get( '/id' ).
 
       CATCH zcx_abapgit_ajson_error INTO lx_ajson.
         zcx_abapgit_exception=>raise_with_text( lx_ajson ).
