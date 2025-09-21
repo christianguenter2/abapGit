@@ -39,6 +39,12 @@ CLASS zcl_abapgit_pr_enum_gitlab IMPLEMENTATION.
     mv_user_and_repo = iv_user_and_repo.
     mi_http_agent = ii_http_agent.
 
+*    IF zcl_abapgit_login_manager=>get( mv_repo_url ) IS NOT INITIAL.
+*      mi_http_agent->global_headers( )->set(
+*        iv_key = 'Authorization'
+*        iv_val = zcl_abapgit_login_manager=>get( mv_repo_url ) ).
+*    ENDIF.
+
   ENDMETHOD.
 
 

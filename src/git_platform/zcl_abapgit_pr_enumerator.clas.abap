@@ -125,6 +125,10 @@ CLASS zcl_abapgit_pr_enumerator IMPLEMENTATION.
           ii_http_agent    = li_agent.
     ENDIF.
 
+    IF ri_provider IS NOT BOUND.
+      ri_provider = zcl_abapgit_exit=>get_instance( )->create_pr_provider( iv_repo_url ).
+    ENDIF.
+
     " TODO somewhen more providers
 
     IF ri_provider IS NOT BOUND.

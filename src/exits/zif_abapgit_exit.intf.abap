@@ -188,4 +188,13 @@ INTERFACE zif_abapgit_exit PUBLIC.
     CHANGING
       cv_name     TYPE csequence
       cv_email    TYPE csequence.
+
+  METHODS create_pr_provider
+    IMPORTING
+      iv_repo_url        TYPE string
+    RETURNING
+      VALUE(ri_provider) TYPE REF TO zif_abapgit_pr_enum_provider
+    RAISING
+      zcx_abapgit_exception.
+
 ENDINTERFACE.
