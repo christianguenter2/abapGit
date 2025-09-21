@@ -100,6 +100,20 @@ CLASS zcl_abapgit_pr_enumerator IMPLEMENTATION.
           ii_http_agent    = li_agent.
     ENDIF.
 
+    FIND ALL OCCURRENCES OF REGEX 'gitlab\.com\/([^\/]+)\/([^\/]+)'
+      IN iv_repo_url
+      SUBMATCHES lv_user lv_repo.
+    IF sy-subrc = 0.
+      lv_repo = replace(
+        val = lv_repo
+        regex = '\.git$'
+        with = '' ).
+      CREATE OBJECT ri_provider TYPE zcl_abapgit_pr_enum_gitlab
+        EXPORTING
+          iv_user_and_repo = |{ lv_user }/{ lv_repo }|
+          ii_http_agent    = li_agent.
+    ENDIF.
+
 * used in integration testing, see /test/ folder
     FIND ALL OCCURRENCES OF REGEX 'localhost:3050\/([^\/]+)\/([^\/]+)'
       IN iv_repo_url
