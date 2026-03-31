@@ -6,6 +6,8 @@ CLASS ltcl_get_patch_data DEFINITION FINAL FOR TESTING
     METHODS:
       get_patch_data_add FOR TESTING RAISING cx_static_check,
       get_patch_data_remove FOR TESTING RAISING cx_static_check,
+      multi_digit_section FOR TESTING RAISING cx_static_check,
+      filename_with_no_underscores FOR TESTING RAISING cx_static_check,
       invalid_patch_missing_file FOR TESTING RAISING cx_static_check,
       invalid_patch_missing_index FOR TESTING RAISING cx_static_check.
 
@@ -38,7 +40,21 @@ CLASS ltcl_is_patch_line_possible DEFINITION FINAL FOR TESTING
 
 ENDCLASS.
 
-CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_is_patch_line_possible.
+
+CLASS ltcl_are_all_lines_patched DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      all_lines_patched FOR TESTING RAISING cx_static_check,
+      no_lines_patched FOR TESTING RAISING cx_static_check,
+      some_lines_patched FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
+CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_is_patch_line_possible
+                                                          ltcl_are_all_lines_patched.
 
 CLASS ltcl_get_patch_data IMPLEMENTATION.
 
@@ -86,6 +102,49 @@ CLASS ltcl_get_patch_data IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD multi_digit_section.
+
+    DATA: lv_file_name  TYPE string,
+          lv_line_index TYPE string.
+
+    zcl_abapgit_gui_page_patch=>get_patch_data(
+      EXPORTING
+        iv_patch      = |patch_line_zcl_some_class.clas.abap_12_99|
+      IMPORTING
+        ev_filename   = lv_file_name
+        ev_line_index = lv_line_index ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = |zcl_some_class.clas.abap|
+      act = lv_file_name ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = |99|
+      act = lv_line_index ).
+
+  ENDMETHOD.
+
+  METHOD filename_with_no_underscores.
+
+    DATA: lv_file_name  TYPE string,
+          lv_line_index TYPE string.
+
+    zcl_abapgit_gui_page_patch=>get_patch_data(
+      EXPORTING
+        iv_patch      = |patch_line_zreport.prog.abap_0_5|
+      IMPORTING
+        ev_filename   = lv_file_name
+        ev_line_index = lv_line_index ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = |zreport.prog.abap|
+      act = lv_file_name ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = |5|
+      act = lv_line_index ).
+
+  ENDMETHOD.
 
   METHOD invalid_patch_missing_file.
 
@@ -217,6 +276,67 @@ CLASS ltcl_is_patch_line_possible IMPLEMENTATION.
   METHOD given_diff_line.
 
     ms_diff_line = is_diff_line.
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_are_all_lines_patched IMPLEMENTATION.
+
+  METHOD all_lines_patched.
+
+    DATA: lt_diff  TYPE zif_abapgit_definitions=>ty_diffs_tt,
+          ls_diff  TYPE zif_abapgit_definitions=>ty_diff,
+          lv_result TYPE abap_bool.
+
+    ls_diff-patch_flag = abap_true.
+    INSERT ls_diff INTO TABLE lt_diff.
+    INSERT ls_diff INTO TABLE lt_diff.
+    INSERT ls_diff INTO TABLE lt_diff.
+
+    lv_result = zcl_abapgit_gui_page_patch=>are_all_lines_patched( lt_diff ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lv_result
+      msg = |All patched lines should return true| ).
+
+  ENDMETHOD.
+
+  METHOD no_lines_patched.
+
+    DATA: lt_diff   TYPE zif_abapgit_definitions=>ty_diffs_tt,
+          ls_diff   TYPE zif_abapgit_definitions=>ty_diff,
+          lv_result TYPE abap_bool.
+
+    ls_diff-patch_flag = abap_false.
+    INSERT ls_diff INTO TABLE lt_diff.
+    INSERT ls_diff INTO TABLE lt_diff.
+
+    lv_result = zcl_abapgit_gui_page_patch=>are_all_lines_patched( lt_diff ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lv_result
+      msg = |No patched lines should return false| ).
+
+  ENDMETHOD.
+
+  METHOD some_lines_patched.
+
+    DATA: lt_diff   TYPE zif_abapgit_definitions=>ty_diffs_tt,
+          ls_diff   TYPE zif_abapgit_definitions=>ty_diff,
+          lv_result TYPE abap_bool.
+
+    ls_diff-patch_flag = abap_true.
+    INSERT ls_diff INTO TABLE lt_diff.
+    ls_diff-patch_flag = abap_false.
+    INSERT ls_diff INTO TABLE lt_diff.
+
+    lv_result = zcl_abapgit_gui_page_patch=>are_all_lines_patched( lt_diff ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lv_result
+      msg = |Partially patched lines should return false| ).
 
   ENDMETHOD.
 

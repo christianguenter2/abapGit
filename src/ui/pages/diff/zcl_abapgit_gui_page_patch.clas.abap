@@ -38,6 +38,12 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
       RAISING
         zcx_abapgit_exception.
 
+    CLASS-METHODS are_all_lines_patched
+      IMPORTING
+        !it_diff                        TYPE zif_abapgit_definitions=>ty_diffs_tt
+      RETURNING
+        VALUE(rv_are_all_lines_patched) TYPE abap_bool .
+
     METHODS:
       zif_abapgit_gui_event_handler~on_event REDEFINITION,
       zif_abapgit_gui_hotkeys~get_hotkey_actions REDEFINITION,
@@ -106,11 +112,6 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         !iv_patch_flag TYPE abap_bool
       RAISING
         zcx_abapgit_exception .
-    METHODS are_all_lines_patched
-      IMPORTING
-        !it_diff                        TYPE zif_abapgit_definitions=>ty_diffs_tt
-      RETURNING
-        VALUE(rv_are_all_lines_patched) TYPE abap_bool .
     METHODS apply_patch_for
       IMPORTING
         !iv_filename   TYPE string
