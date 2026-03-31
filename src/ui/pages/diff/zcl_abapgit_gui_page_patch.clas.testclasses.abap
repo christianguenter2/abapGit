@@ -53,6 +53,45 @@ CLASS ltcl_are_all_lines_patched DEFINITION FINAL FOR TESTING
 
 ENDCLASS.
 
+
+CLASS lcl_diff_double DEFINITION.
+  PUBLIC SECTION.
+    INTERFACES zif_abapgit_diff.
+    DATA mt_diff TYPE zif_abapgit_definitions=>ty_diffs_tt.
+ENDCLASS.
+
+CLASS lcl_diff_double IMPLEMENTATION.
+  METHOD zif_abapgit_diff~get.
+    rt_diff = mt_diff.
+  ENDMETHOD.
+  METHOD zif_abapgit_diff~create.          ##NEEDED
+  ENDMETHOD.
+  METHOD zif_abapgit_diff~stats.           ##NEEDED
+  ENDMETHOD.
+  METHOD zif_abapgit_diff~set_patch_new.   ##NEEDED
+  ENDMETHOD.
+  METHOD zif_abapgit_diff~set_patch_old.   ##NEEDED
+  ENDMETHOD.
+  METHOD zif_abapgit_diff~get_beacons.     ##NEEDED
+  ENDMETHOD.
+  METHOD zif_abapgit_diff~is_line_patched. ##NEEDED
+  ENDMETHOD.
+  METHOD zif_abapgit_diff~set_patch_by_old_diff. ##NEEDED
+  ENDMETHOD.
+ENDCLASS.
+
+
+CLASS ltcl_get_diff_line DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      valid_index FOR TESTING RAISING cx_static_check,
+      invalid_index FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
 CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_is_patch_line_possible
                                                           ltcl_are_all_lines_patched.
 
@@ -337,6 +376,64 @@ CLASS ltcl_are_all_lines_patched IMPLEMENTATION.
     cl_abap_unit_assert=>assert_false(
       act = lv_result
       msg = |Partially patched lines should return false| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_get_diff_line IMPLEMENTATION.
+
+  METHOD valid_index.
+
+    DATA: lo_diff   TYPE REF TO lcl_diff_double,
+          ls_diff   TYPE zif_abapgit_definitions=>ty_diff,
+          ls_result TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff.
+
+    ls_diff-result = zif_abapgit_definitions=>c_diff-insert.
+    ls_diff-new    = |line one|.
+    INSERT ls_diff INTO TABLE lo_diff->mt_diff.
+
+    ls_diff-result = zif_abapgit_definitions=>c_diff-delete.
+    ls_diff-new    = |line two|.
+    INSERT ls_diff INTO TABLE lo_diff->mt_diff.
+
+    ls_result = zcl_abapgit_gui_page_patch=>get_diff_line(
+      io_diff       = lo_diff
+      iv_line_index = |2| ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = zif_abapgit_definitions=>c_diff-delete
+      act = ls_result-result
+      msg = |Should return the diff line at the given index| ).
+
+  ENDMETHOD.
+
+  METHOD invalid_index.
+
+    DATA: lo_diff  TYPE REF TO lcl_diff_double,
+          ls_diff  TYPE zif_abapgit_definitions=>ty_diff,
+          lx_error TYPE REF TO zcx_abapgit_exception.
+
+    CREATE OBJECT lo_diff.
+
+    ls_diff-result = zif_abapgit_definitions=>c_diff-insert.
+    INSERT ls_diff INTO TABLE lo_diff->mt_diff.
+
+    TRY.
+        zcl_abapgit_gui_page_patch=>get_diff_line(
+          io_diff       = lo_diff
+          iv_line_index = |99| ).
+
+        cl_abap_unit_assert=>fail( ).
+
+      CATCH zcx_abapgit_exception INTO lx_error.
+        cl_abap_unit_assert=>assert_equals(
+          exp = |Invalid line index 99|
+          act = lx_error->get_text( ) ).
+    ENDTRY.
 
   ENDMETHOD.
 

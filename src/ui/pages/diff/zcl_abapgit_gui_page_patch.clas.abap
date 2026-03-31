@@ -44,6 +44,15 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
       RETURNING
         VALUE(rv_are_all_lines_patched) TYPE abap_bool .
 
+    CLASS-METHODS get_diff_line
+      IMPORTING
+        !io_diff       TYPE REF TO zif_abapgit_diff
+        !iv_line_index TYPE string
+      RETURNING
+        VALUE(rs_diff) TYPE zif_abapgit_definitions=>ty_diff
+      RAISING
+        zcx_abapgit_exception .
+
     METHODS:
       zif_abapgit_gui_event_handler~on_event REDEFINITION,
       zif_abapgit_gui_hotkeys~get_hotkey_actions REDEFINITION,
@@ -124,14 +133,6 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         !iv_filename   TYPE string
       RETURNING
         VALUE(ro_diff) TYPE REF TO zif_abapgit_diff
-      RAISING
-        zcx_abapgit_exception .
-    METHODS get_diff_line
-      IMPORTING
-        !io_diff       TYPE REF TO zif_abapgit_diff
-        !iv_line_index TYPE string
-      RETURNING
-        VALUE(rs_diff) TYPE zif_abapgit_definitions=>ty_diff
       RAISING
         zcx_abapgit_exception .
     CLASS-METHODS is_patch_line_possible
