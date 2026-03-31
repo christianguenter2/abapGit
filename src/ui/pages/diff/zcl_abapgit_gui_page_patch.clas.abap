@@ -212,7 +212,7 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
       CREATE OBJECT lo_git_add_patch
         EXPORTING
-          it_diff = <ls_diff_file>-o_diff->get( ).
+          it_diff = lt_diff.
 
       lv_patch = lo_git_add_patch->get_patch_binary( ).
 
@@ -434,13 +434,11 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD get_patch_data.
 
-    DATA: lv_section TYPE string.
-
     CLEAR: ev_filename, ev_line_index.
 
-    FIND FIRST OCCURRENCE OF REGEX `patch_line` && `_(.*)_(\d)+_(\d+)`
+    FIND FIRST OCCURRENCE OF REGEX `patch_line` && `_(.*)_\d+_(\d+)`
          IN iv_patch
-         SUBMATCHES ev_filename lv_section ev_line_index ##REGEX_POSIX.
+         SUBMATCHES ev_filename ev_line_index ##REGEX_POSIX.
     IF sy-subrc <> 0.
       zcx_abapgit_exception=>raise( |Invalid patch| ).
     ENDIF.
