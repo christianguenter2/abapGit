@@ -111,19 +111,19 @@ CLASS lcl_diff_double IMPLEMENTATION.
   METHOD zif_abapgit_diff~get.
     rt_diff = mt_diff.
   ENDMETHOD.
-  METHOD zif_abapgit_diff~create.          ##NEEDED
+  METHOD zif_abapgit_diff~create.
   ENDMETHOD.
-  METHOD zif_abapgit_diff~stats.           ##NEEDED
+  METHOD zif_abapgit_diff~stats.
   ENDMETHOD.
-  METHOD zif_abapgit_diff~set_patch_new.   ##NEEDED
+  METHOD zif_abapgit_diff~set_patch_new.
   ENDMETHOD.
-  METHOD zif_abapgit_diff~set_patch_old.   ##NEEDED
+  METHOD zif_abapgit_diff~set_patch_old.
   ENDMETHOD.
-  METHOD zif_abapgit_diff~get_beacons.     ##NEEDED
+  METHOD zif_abapgit_diff~get_beacons.
   ENDMETHOD.
-  METHOD zif_abapgit_diff~is_line_patched. ##NEEDED
+  METHOD zif_abapgit_diff~is_line_patched.
   ENDMETHOD.
-  METHOD zif_abapgit_diff~set_patch_by_old_diff. ##NEEDED
+  METHOD zif_abapgit_diff~set_patch_by_old_diff.
   ENDMETHOD.
 ENDCLASS.
 
