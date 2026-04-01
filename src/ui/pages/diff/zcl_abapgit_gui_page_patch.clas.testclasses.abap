@@ -55,6 +55,52 @@ CLASS ltcl_are_all_lines_patched DEFINITION FINAL FOR TESTING
 ENDCLASS.
 
 
+CLASS ltcl_render_patch_cell DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      patch_not_possible FOR TESTING RAISING cx_static_check,
+      patch_possible_not_patched FOR TESTING RAISING cx_static_check,
+      patch_possible_patched FOR TESTING RAISING cx_static_check,
+      patch_id_format FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
+
+CLASS lcl_html_double DEFINITION.
+  PUBLIC SECTION.
+    INTERFACES zif_abapgit_html.
+    DATA mv_checkbox_called  TYPE abap_bool.
+    DATA mv_checkbox_id      TYPE string.
+    DATA mv_checkbox_checked TYPE abap_bool.
+ENDCLASS.
+
+CLASS lcl_html_double IMPLEMENTATION.
+  METHOD zif_abapgit_html~add.
+    ri_self = me.
+  ENDMETHOD.
+  METHOD zif_abapgit_html~add_checkbox.
+    mv_checkbox_called  = abap_true.
+    mv_checkbox_id      = iv_id.
+    mv_checkbox_checked = iv_checked.
+    ri_self = me.
+  ENDMETHOD.
+  METHOD zif_abapgit_html~set_title.  ri_self = me. ENDMETHOD.
+  METHOD zif_abapgit_html~render.                   ENDMETHOD.
+  METHOD zif_abapgit_html~is_empty.                 ENDMETHOD.
+  METHOD zif_abapgit_html~add_a.      ri_self = me. ENDMETHOD.
+  METHOD zif_abapgit_html~a.                        ENDMETHOD.
+  METHOD zif_abapgit_html~icon.                     ENDMETHOD.
+  METHOD zif_abapgit_html~add_icon.   ri_self = me. ENDMETHOD.
+  METHOD zif_abapgit_html~wrap.       ri_self = me. ENDMETHOD.
+  METHOD zif_abapgit_html~td.         ri_self = me. ENDMETHOD.
+  METHOD zif_abapgit_html~th.         ri_self = me. ENDMETHOD.
+  METHOD zif_abapgit_html~div.        ri_self = me. ENDMETHOD.
+ENDCLASS.
+
+
 CLASS lcl_diff_double DEFINITION.
   PUBLIC SECTION.
     INTERFACES zif_abapgit_diff.
@@ -95,6 +141,84 @@ ENDCLASS.
 
 CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_is_patch_line_possible
                                                           ltcl_are_all_lines_patched.
+
+CLASS ltcl_render_patch_cell IMPLEMENTATION.
+
+  METHOD patch_not_possible.
+
+    DATA lo_html TYPE REF TO lcl_html_double.
+    CREATE OBJECT lo_html.
+
+    zcl_abapgit_gui_page_patch=>render_patch_cell(
+      ii_html        = lo_html
+      iv_id          = |some_0_5|
+      iv_is_possible = abap_false
+      iv_patched     = abap_false ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_html->mv_checkbox_called
+      msg = |No checkbox should be rendered when patch is not possible| ).
+
+  ENDMETHOD.
+
+  METHOD patch_possible_not_patched.
+
+    DATA lo_html TYPE REF TO lcl_html_double.
+    CREATE OBJECT lo_html.
+
+    zcl_abapgit_gui_page_patch=>render_patch_cell(
+      ii_html        = lo_html
+      iv_id          = |myfile.abap_0_5|
+      iv_is_possible = abap_true
+      iv_patched     = abap_false ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_html->mv_checkbox_called
+      msg = |Checkbox should be rendered when patch is possible| ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_html->mv_checkbox_checked
+      msg = |Checkbox should not be checked when not patched| ).
+
+  ENDMETHOD.
+
+  METHOD patch_possible_patched.
+
+    DATA lo_html TYPE REF TO lcl_html_double.
+    CREATE OBJECT lo_html.
+
+    zcl_abapgit_gui_page_patch=>render_patch_cell(
+      ii_html        = lo_html
+      iv_id          = |myfile.abap_0_5|
+      iv_is_possible = abap_true
+      iv_patched     = abap_true ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_html->mv_checkbox_checked
+      msg = |Checkbox should be checked when line is patched| ).
+
+  ENDMETHOD.
+
+  METHOD patch_id_format.
+
+    DATA lo_html TYPE REF TO lcl_html_double.
+    CREATE OBJECT lo_html.
+
+    zcl_abapgit_gui_page_patch=>render_patch_cell(
+      ii_html        = lo_html
+      iv_id          = |myfile.abap_0_5|
+      iv_is_possible = abap_true
+      iv_patched     = abap_false ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = |patch_line_myfile.abap_0_5|
+      act = lo_html->mv_checkbox_id
+      msg = |Checkbox ID should have patch_line_ prefix| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
 
 CLASS ltcl_get_patch_data IMPLEMENTATION.
 

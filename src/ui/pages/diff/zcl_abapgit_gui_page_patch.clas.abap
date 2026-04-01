@@ -53,6 +53,13 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
       RAISING
         zcx_abapgit_exception .
 
+    CLASS-METHODS render_patch_cell
+      IMPORTING
+        !ii_html        TYPE REF TO zif_abapgit_html
+        !iv_id          TYPE string
+        !iv_is_possible TYPE abap_bool
+        !iv_patched     TYPE abap_bool .
+
     METHODS:
       zif_abapgit_gui_event_handler~on_event REDEFINITION,
       zif_abapgit_gui_hotkeys~get_hotkey_actions REDEFINITION,
@@ -478,39 +485,35 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD render_patch.
 
-    CONSTANTS:
-      BEGIN OF lc_css_class,
-        patch TYPE string VALUE `patch`,
-      END OF lc_css_class.
-
     DATA:
-      lv_id                TYPE string,
-      lv_patched           TYPE abap_bool,
-      lv_is_patch_possible TYPE abap_bool.
+      lv_id      TYPE string,
+      lv_patched TYPE abap_bool.
 
     " In case an object is falsely detected as changed, filename is empty and there's no diff object
     IF iv_filename IS NOT INITIAL.
       lv_patched = get_diff_object( iv_filename )->is_line_patched( iv_index ).
     ENDIF.
 
-    lv_is_patch_possible = is_patch_line_possible( is_diff_line ).
+    lv_id = |{ iv_filename }_{ mv_section_count }_{ iv_index }|.
 
-    IF lv_is_patch_possible = abap_true.
+    render_patch_cell(
+      ii_html        = ii_html
+      iv_id          = lv_id
+      iv_is_possible = is_patch_line_possible( is_diff_line )
+      iv_patched     = lv_patched ).
 
-      lv_id = |{ iv_filename }_{ mv_section_count }_{ iv_index }|.
+  ENDMETHOD.
 
-      ii_html->add( |<td class="{ lc_css_class-patch }">| ).
+
+  METHOD render_patch_cell.
+
+    ii_html->add( '<td class="patch">' ).
+    IF iv_is_possible = abap_true.
       ii_html->add_checkbox(
-          iv_id      = |patch_line_{ lv_id }|
-          iv_checked = lv_patched ).
-      ii_html->add( |</td>| ).
-
-    ELSE.
-
-      ii_html->add( |<td class="{ lc_css_class-patch }">| ).
-      ii_html->add( |</td>| ).
-
+          iv_id      = |patch_line_{ iv_id }|
+          iv_checked = iv_patched ).
     ENDIF.
+    ii_html->add( '</td>' ).
 
   ENDMETHOD.
 
