@@ -86,6 +86,7 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         add    TYPE ty_patch_action VALUE 'add',
         remove TYPE ty_patch_action VALUE 'remove',
       END OF c_patch_action .
+    CONSTANTS c_patch_line_prefix TYPE string VALUE 'patch_line_' .
     DATA mo_stage TYPE REF TO zcl_abapgit_stage .
     DATA mv_section_count TYPE i .
     DATA mv_pushed TYPE abap_bool .
@@ -449,7 +450,7 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
     CLEAR: ev_filename, ev_line_index.
 
-    FIND FIRST OCCURRENCE OF REGEX `patch_line` && `_(.*)_\d+_(\d+)`
+    FIND FIRST OCCURRENCE OF REGEX c_patch_line_prefix && `(.*)_\d+_(\d+)`
          IN iv_patch
          SUBMATCHES ev_filename ev_line_index ##REGEX_POSIX.
     IF sy-subrc <> 0.
@@ -510,7 +511,7 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
     ii_html->add( '<td class="patch">' ).
     IF iv_is_possible = abap_true.
       ii_html->add_checkbox(
-          iv_id      = |patch_line_{ iv_id }|
+          iv_id      = |{ c_patch_line_prefix }{ iv_id }|
           iv_checked = iv_patched ).
     ENDIF.
     ii_html->add( '</td>' ).
