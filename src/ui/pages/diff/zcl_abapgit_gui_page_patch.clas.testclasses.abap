@@ -49,7 +49,8 @@ CLASS ltcl_are_all_lines_patched DEFINITION FINAL FOR TESTING
     METHODS:
       all_lines_patched FOR TESTING RAISING cx_static_check,
       no_lines_patched FOR TESTING RAISING cx_static_check,
-      some_lines_patched FOR TESTING RAISING cx_static_check.
+      some_lines_patched FOR TESTING RAISING cx_static_check,
+      empty_diff FOR TESTING RAISING cx_static_check.
 
 ENDCLASS.
 
@@ -376,6 +377,19 @@ CLASS ltcl_are_all_lines_patched IMPLEMENTATION.
     cl_abap_unit_assert=>assert_false(
       act = lv_result
       msg = |Partially patched lines should return false| ).
+
+  ENDMETHOD.
+
+  METHOD empty_diff.
+
+    DATA: lt_diff   TYPE zif_abapgit_definitions=>ty_diffs_tt,
+          lv_result TYPE abap_bool.
+
+    lv_result = zcl_abapgit_gui_page_patch=>are_all_lines_patched( lt_diff ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lv_result
+      msg = |Empty diff should return false| ).
 
   ENDMETHOD.
 

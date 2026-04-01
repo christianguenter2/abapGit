@@ -335,6 +335,10 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
     FIELD-SYMBOLS: <ls_diff> TYPE zif_abapgit_definitions=>ty_diff.
 
+    IF it_diff IS INITIAL.
+      RETURN.
+    ENDIF.
+
     LOOP AT it_diff ASSIGNING <ls_diff>
                     WHERE patch_flag = abap_true.
       lv_patch_count = lv_patch_count + 1.
