@@ -157,8 +157,11 @@ CLASS ltcl_get_diff_line DEFINITION FINAL FOR TESTING
 
 ENDCLASS.
 
-CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_is_patch_line_possible
-                                                          ltcl_are_all_lines_patched.
+CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
+                                                          ltcl_is_patch_line_possible
+                                                          ltcl_are_all_lines_patched
+                                                          ltcl_render_patch_cell
+                                                          ltcl_get_diff_line.
 
 CLASS ltcl_render_patch_cell IMPLEMENTATION.
 

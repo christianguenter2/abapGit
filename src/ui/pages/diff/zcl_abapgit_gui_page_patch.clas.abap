@@ -29,37 +29,6 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
       RAISING
         zcx_abapgit_exception.
 
-    CLASS-METHODS get_patch_data
-      IMPORTING
-        !iv_patch      TYPE string
-      EXPORTING
-        !ev_filename   TYPE string
-        !ev_line_index TYPE string
-      RAISING
-        zcx_abapgit_exception.
-
-    CLASS-METHODS are_all_lines_patched
-      IMPORTING
-        !it_diff                        TYPE zif_abapgit_definitions=>ty_diffs_tt
-      RETURNING
-        VALUE(rv_are_all_lines_patched) TYPE abap_bool .
-
-    CLASS-METHODS get_diff_line
-      IMPORTING
-        !io_diff       TYPE REF TO zif_abapgit_diff
-        !iv_line_index TYPE string
-      RETURNING
-        VALUE(rs_diff) TYPE zif_abapgit_definitions=>ty_diff
-      RAISING
-        zcx_abapgit_exception .
-
-    CLASS-METHODS render_patch_cell
-      IMPORTING
-        !ii_html        TYPE REF TO zif_abapgit_html
-        !iv_id          TYPE string
-        !iv_is_possible TYPE abap_bool
-        !iv_patched     TYPE abap_bool .
-
     METHODS:
       zif_abapgit_gui_event_handler~on_event REDEFINITION,
       zif_abapgit_gui_hotkeys~get_hotkey_actions REDEFINITION,
@@ -87,6 +56,33 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         remove TYPE ty_patch_action VALUE 'remove',
       END OF c_patch_action .
     CONSTANTS c_patch_line_prefix TYPE string VALUE 'patch_line_' .
+    CLASS-METHODS get_patch_data
+      IMPORTING
+        !iv_patch      TYPE string
+      EXPORTING
+        !ev_filename   TYPE string
+        !ev_line_index TYPE string
+      RAISING
+        zcx_abapgit_exception.
+    CLASS-METHODS are_all_lines_patched
+      IMPORTING
+        !it_diff                        TYPE zif_abapgit_definitions=>ty_diffs_tt
+      RETURNING
+        VALUE(rv_are_all_lines_patched) TYPE abap_bool .
+    CLASS-METHODS get_diff_line
+      IMPORTING
+        !io_diff       TYPE REF TO zif_abapgit_diff
+        !iv_line_index TYPE string
+      RETURNING
+        VALUE(rs_diff) TYPE zif_abapgit_definitions=>ty_diff
+      RAISING
+        zcx_abapgit_exception .
+    CLASS-METHODS render_patch_cell
+      IMPORTING
+        !ii_html        TYPE REF TO zif_abapgit_html
+        !iv_id          TYPE string
+        !iv_is_possible TYPE abap_bool
+        !iv_patched     TYPE abap_bool .
     DATA mo_stage TYPE REF TO zcl_abapgit_stage .
     DATA mv_section_count TYPE i .
     DATA mv_pushed TYPE abap_bool .
