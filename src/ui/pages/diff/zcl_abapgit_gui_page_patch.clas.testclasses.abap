@@ -87,17 +87,35 @@ CLASS lcl_html_double IMPLEMENTATION.
     mv_checkbox_checked = iv_checked.
     ri_self = me.
   ENDMETHOD.
-  METHOD zif_abapgit_html~set_title.  ri_self = me. ENDMETHOD.
-  METHOD zif_abapgit_html~render.                   ENDMETHOD.
-  METHOD zif_abapgit_html~is_empty.                 ENDMETHOD.
-  METHOD zif_abapgit_html~add_a.      ri_self = me. ENDMETHOD.
-  METHOD zif_abapgit_html~a.                        ENDMETHOD.
-  METHOD zif_abapgit_html~icon.                     ENDMETHOD.
-  METHOD zif_abapgit_html~add_icon.   ri_self = me. ENDMETHOD.
-  METHOD zif_abapgit_html~wrap.       ri_self = me. ENDMETHOD.
-  METHOD zif_abapgit_html~td.         ri_self = me. ENDMETHOD.
-  METHOD zif_abapgit_html~th.         ri_self = me. ENDMETHOD.
-  METHOD zif_abapgit_html~div.        ri_self = me. ENDMETHOD.
+  METHOD zif_abapgit_html~set_title.
+    ri_self = me.
+  ENDMETHOD.
+  METHOD zif_abapgit_html~render.
+  ENDMETHOD.
+  METHOD zif_abapgit_html~is_empty.
+  ENDMETHOD.
+  METHOD zif_abapgit_html~add_a.
+    ri_self = me.
+  ENDMETHOD.
+  METHOD zif_abapgit_html~a.
+  ENDMETHOD.
+  METHOD zif_abapgit_html~icon.
+  ENDMETHOD.
+  METHOD zif_abapgit_html~add_icon.
+    ri_self = me.
+  ENDMETHOD.
+  METHOD zif_abapgit_html~wrap.
+    ri_self = me.
+  ENDMETHOD.
+  METHOD zif_abapgit_html~td.
+    ri_self = me.
+  ENDMETHOD.
+  METHOD zif_abapgit_html~th.
+    ri_self = me.
+  ENDMETHOD.
+  METHOD zif_abapgit_html~div.
+    ri_self = me.
+  ENDMETHOD.
 ENDCLASS.
 
 
