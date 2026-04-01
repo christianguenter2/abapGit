@@ -69,7 +69,7 @@ CLASS ltcl_render_patch_cell DEFINITION FINAL FOR TESTING
 ENDCLASS.
 
 
-CLASS lcl_html_double DEFINITION.
+CLASS ltd_html_double DEFINITION FOR TESTING.
   PUBLIC SECTION.
     INTERFACES zif_abapgit_html.
     DATA mv_checkbox_called  TYPE abap_bool.
@@ -77,7 +77,7 @@ CLASS lcl_html_double DEFINITION.
     DATA mv_checkbox_checked TYPE abap_bool.
 ENDCLASS.
 
-CLASS lcl_html_double IMPLEMENTATION.
+CLASS ltd_html_double IMPLEMENTATION.
   METHOD zif_abapgit_html~add.
     ri_self = me.
   ENDMETHOD.
@@ -119,13 +119,13 @@ CLASS lcl_html_double IMPLEMENTATION.
 ENDCLASS.
 
 
-CLASS lcl_diff_double DEFINITION.
+CLASS ltd_diff_double DEFINITION FOR TESTING.
   PUBLIC SECTION.
     INTERFACES zif_abapgit_diff.
     DATA mt_diff TYPE zif_abapgit_definitions=>ty_diffs_tt.
 ENDCLASS.
 
-CLASS lcl_diff_double IMPLEMENTATION.
+CLASS ltd_diff_double IMPLEMENTATION.
   METHOD zif_abapgit_diff~get.
     rt_diff = mt_diff.
   ENDMETHOD.
@@ -167,7 +167,7 @@ CLASS ltcl_render_patch_cell IMPLEMENTATION.
 
   METHOD patch_not_possible.
 
-    DATA lo_html TYPE REF TO lcl_html_double.
+    DATA lo_html TYPE REF TO ltd_html_double.
     CREATE OBJECT lo_html.
 
     zcl_abapgit_gui_page_patch=>render_patch_cell(
@@ -184,7 +184,7 @@ CLASS ltcl_render_patch_cell IMPLEMENTATION.
 
   METHOD patch_possible_not_patched.
 
-    DATA lo_html TYPE REF TO lcl_html_double.
+    DATA lo_html TYPE REF TO ltd_html_double.
     CREATE OBJECT lo_html.
 
     zcl_abapgit_gui_page_patch=>render_patch_cell(
@@ -205,7 +205,7 @@ CLASS ltcl_render_patch_cell IMPLEMENTATION.
 
   METHOD patch_possible_patched.
 
-    DATA lo_html TYPE REF TO lcl_html_double.
+    DATA lo_html TYPE REF TO ltd_html_double.
     CREATE OBJECT lo_html.
 
     zcl_abapgit_gui_page_patch=>render_patch_cell(
@@ -222,7 +222,7 @@ CLASS ltcl_render_patch_cell IMPLEMENTATION.
 
   METHOD patch_id_format.
 
-    DATA lo_html TYPE REF TO lcl_html_double.
+    DATA lo_html TYPE REF TO ltd_html_double.
     CREATE OBJECT lo_html.
 
     zcl_abapgit_gui_page_patch=>render_patch_cell(
@@ -545,7 +545,7 @@ CLASS ltcl_get_diff_line IMPLEMENTATION.
 
   METHOD valid_index.
 
-    DATA: lo_diff   TYPE REF TO lcl_diff_double,
+    DATA: lo_diff   TYPE REF TO ltd_diff_double,
           ls_diff   TYPE zif_abapgit_definitions=>ty_diff,
           ls_result TYPE zif_abapgit_definitions=>ty_diff.
 
@@ -572,7 +572,7 @@ CLASS ltcl_get_diff_line IMPLEMENTATION.
 
   METHOD invalid_index.
 
-    DATA: lo_diff  TYPE REF TO lcl_diff_double,
+    DATA: lo_diff  TYPE REF TO ltd_diff_double,
           ls_diff  TYPE zif_abapgit_definitions=>ty_diff,
           lx_error TYPE REF TO zcx_abapgit_exception.
 
