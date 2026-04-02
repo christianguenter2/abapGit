@@ -96,6 +96,14 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         !it_diff_files_old TYPE zif_abapgit_gui_diff=>ty_file_diffs
       RAISING
         zcx_abapgit_exception .
+    CLASS-METHODS get_diff_object_from
+      IMPORTING
+        !it_diff_files TYPE zif_abapgit_gui_diff=>ty_file_diffs
+        !iv_filename   TYPE string
+      RETURNING
+        VALUE(ro_diff) TYPE REF TO zif_abapgit_diff
+      RAISING
+        zcx_abapgit_exception .
     DATA mo_stage TYPE REF TO zcl_abapgit_stage .
     DATA mv_section_count TYPE i .
     DATA mv_pushed TYPE abap_bool .
@@ -447,9 +455,18 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD get_diff_object.
 
-    FIELD-SYMBOLS: <ls_diff_file> LIKE LINE OF mt_diff_files.
+    ro_diff = get_diff_object_from(
+      it_diff_files = mt_diff_files
+      iv_filename   = iv_filename ).
 
-    LOOP AT mt_diff_files ASSIGNING <ls_diff_file>.
+  ENDMETHOD.
+
+
+  METHOD get_diff_object_from.
+
+    FIELD-SYMBOLS: <ls_diff_file> LIKE LINE OF it_diff_files.
+
+    LOOP AT it_diff_files ASSIGNING <ls_diff_file>.
       IF get_normalized_fname_with_path( <ls_diff_file> ) = iv_filename.
         ro_diff = <ls_diff_file>-o_diff.
         EXIT.

@@ -203,13 +203,27 @@ CLASS ltcl_restore_patch_flags DEFINITION FINAL FOR TESTING
 
 ENDCLASS.
 
+
+CLASS ltcl_get_diff_object DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      file_found FOR TESTING RAISING cx_static_check,
+      file_not_found FOR TESTING RAISING cx_static_check,
+      correct_file_among_multiple FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
 CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_is_patch_line_possible
                                                           ltcl_are_all_lines_patched
                                                           ltcl_render_patch_cell
                                                           ltcl_get_diff_line
                                                           ltcl_apply_patch_to_diff
-                                                          ltcl_restore_patch_flags.
+                                                          ltcl_restore_patch_flags
+                                                          ltcl_get_diff_object.
 
 CLASS ltcl_render_patch_cell IMPLEMENTATION.
 
@@ -833,6 +847,92 @@ CLASS ltcl_restore_patch_flags IMPLEMENTATION.
     cl_abap_unit_assert=>assert_false(
       act = lo_diff_new->mv_set_patch_by_old_called
       msg = |set_patch_by_old_diff should not be called when old diff is unbound| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_get_diff_object IMPLEMENTATION.
+
+  METHOD file_found.
+
+    DATA: lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff      TYPE REF TO ltd_diff_double,
+          lo_result    TYPE REF TO zif_abapgit_diff.
+
+    CREATE OBJECT lo_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.clas.abap'.
+    ls_file_diff-o_diff   = lo_diff.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    lo_result = zcl_abapgit_gui_page_patch=>get_diff_object_from(
+      it_diff_files = lt_files
+      iv_filename   = '_src__ztest_clas_abap' ).
+
+    cl_abap_unit_assert=>assert_bound(
+      act = lo_result
+      msg = |Diff object should be returned for a known filename| ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = lo_diff
+      act = lo_result
+      msg = |Correct diff object should be returned| ).
+
+  ENDMETHOD.
+
+  METHOD file_not_found.
+
+    DATA: lt_files TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          lx_error TYPE REF TO zcx_abapgit_exception.
+
+    TRY.
+        zcl_abapgit_gui_page_patch=>get_diff_object_from(
+          it_diff_files = lt_files
+          iv_filename   = 'unknown_file' ).
+
+        cl_abap_unit_assert=>fail( ).
+
+      CATCH zcx_abapgit_exception INTO lx_error.
+        cl_abap_unit_assert=>assert_equals(
+          exp = |Invalid filename unknown_file|
+          act = lx_error->get_text( )
+          msg = |Exception message should contain the invalid filename| ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+  METHOD correct_file_among_multiple.
+
+    DATA: lt_files      TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff  TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff_a     TYPE REF TO ltd_diff_double,
+          lo_diff_b     TYPE REF TO ltd_diff_double,
+          lo_result     TYPE REF TO zif_abapgit_diff.
+
+    CREATE OBJECT lo_diff_a.
+    CREATE OBJECT lo_diff_b.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'zclass_a.clas.abap'.
+    ls_file_diff-o_diff   = lo_diff_a.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    ls_file_diff-filename = 'zclass_b.clas.abap'.
+    ls_file_diff-o_diff   = lo_diff_b.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    lo_result = zcl_abapgit_gui_page_patch=>get_diff_object_from(
+      it_diff_files = lt_files
+      iv_filename   = '_src__zclass_b_clas_abap' ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = lo_diff_b
+      act = lo_result
+      msg = |Should return diff_b, not diff_a| ).
 
   ENDMETHOD.
 
