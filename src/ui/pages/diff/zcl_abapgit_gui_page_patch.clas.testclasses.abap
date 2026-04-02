@@ -122,13 +122,16 @@ ENDCLASS.
 CLASS ltd_diff_double DEFINITION FOR TESTING.
   PUBLIC SECTION.
     INTERFACES zif_abapgit_diff.
-    DATA mt_diff               TYPE zif_abapgit_definitions=>ty_diffs_tt.
-    DATA mv_set_patch_new_called TYPE abap_bool.
-    DATA mv_set_patch_new_line   TYPE i.
-    DATA mv_set_patch_new_flag   TYPE abap_bool.
-    DATA mv_set_patch_old_called TYPE abap_bool.
-    DATA mv_set_patch_old_line   TYPE i.
-    DATA mv_set_patch_old_flag   TYPE abap_bool.
+    DATA mt_diff                   TYPE zif_abapgit_definitions=>ty_diffs_tt.
+    DATA mv_set_patch_new_called   TYPE abap_bool.
+    DATA mv_set_patch_new_line     TYPE i.
+    DATA mv_set_patch_new_flag     TYPE abap_bool.
+    DATA mv_set_patch_old_called   TYPE abap_bool.
+    DATA mv_set_patch_old_line     TYPE i.
+    DATA mv_set_patch_old_flag     TYPE abap_bool.
+    DATA mv_set_patch_by_old_called TYPE abap_bool.
+    DATA ms_set_patch_by_old_diff   TYPE zif_abapgit_definitions=>ty_diff.
+    DATA mv_set_patch_by_old_flag   TYPE abap_bool.
 ENDCLASS.
 
 CLASS ltd_diff_double IMPLEMENTATION.
@@ -154,6 +157,9 @@ CLASS ltd_diff_double IMPLEMENTATION.
   METHOD zif_abapgit_diff~is_line_patched.
   ENDMETHOD.
   METHOD zif_abapgit_diff~set_patch_by_old_diff.
+    mv_set_patch_by_old_called = abap_true.
+    ms_set_patch_by_old_diff   = is_diff_old.
+    mv_set_patch_by_old_flag   = iv_patch_flag.
   ENDMETHOD.
 ENDCLASS.
 
@@ -183,12 +189,27 @@ CLASS ltcl_apply_patch_to_diff DEFINITION FINAL FOR TESTING
 
 ENDCLASS.
 
+
+CLASS ltcl_restore_patch_flags DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      patched_line_is_restored FOR TESTING RAISING cx_static_check,
+      unpatched_line_not_restored FOR TESTING RAISING cx_static_check,
+      file_not_in_old_skipped FOR TESTING RAISING cx_static_check,
+      unbound_old_diff_skipped FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
 CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_is_patch_line_possible
                                                           ltcl_are_all_lines_patched
                                                           ltcl_render_patch_cell
                                                           ltcl_get_diff_line
-                                                          ltcl_apply_patch_to_diff.
+                                                          ltcl_apply_patch_to_diff
+                                                          ltcl_restore_patch_flags.
 
 CLASS ltcl_render_patch_cell IMPLEMENTATION.
 
@@ -673,6 +694,145 @@ CLASS ltcl_apply_patch_to_diff IMPLEMENTATION.
     cl_abap_unit_assert=>assert_false(
       act = lo_diff->mv_set_patch_old_called
       msg = |set_patch_old should not be called for equal lines| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_restore_patch_flags IMPLEMENTATION.
+
+  METHOD patched_line_is_restored.
+
+    DATA: lt_new          TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          lt_old          TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff    TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff_new     TYPE REF TO ltd_diff_double,
+          lo_diff_old     TYPE REF TO ltd_diff_double,
+          ls_diff_old     TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff_new.
+    CREATE OBJECT lo_diff_old.
+
+    ls_diff_old-result     = zif_abapgit_definitions=>c_diff-update.
+    ls_diff_old-new_num    = 5.
+    ls_diff_old-patch_flag = abap_true.
+    INSERT ls_diff_old INTO TABLE lo_diff_old->mt_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-o_diff   = lo_diff_old.
+    INSERT ls_file_diff INTO TABLE lt_old.
+
+    ls_file_diff-o_diff = lo_diff_new.
+    INSERT ls_file_diff INTO TABLE lt_new.
+
+    zcl_abapgit_gui_page_patch=>restore_patch_flags_impl(
+      it_diff_files     = lt_new
+      it_diff_files_old = lt_old ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_diff_new->mv_set_patch_by_old_called
+      msg = |set_patch_by_old_diff should be called for patched lines| ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_diff_new->mv_set_patch_by_old_flag
+      msg = |patch_flag true should be passed through| ).
+
+  ENDMETHOD.
+
+  METHOD unpatched_line_not_restored.
+
+    DATA: lt_new       TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          lt_old       TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff_new  TYPE REF TO ltd_diff_double,
+          lo_diff_old  TYPE REF TO ltd_diff_double,
+          ls_diff_old  TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff_new.
+    CREATE OBJECT lo_diff_old.
+
+    ls_diff_old-result     = zif_abapgit_definitions=>c_diff-update.
+    ls_diff_old-patch_flag = abap_false.
+    INSERT ls_diff_old INTO TABLE lo_diff_old->mt_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-o_diff   = lo_diff_old.
+    INSERT ls_file_diff INTO TABLE lt_old.
+
+    ls_file_diff-o_diff = lo_diff_new.
+    INSERT ls_file_diff INTO TABLE lt_new.
+
+    zcl_abapgit_gui_page_patch=>restore_patch_flags_impl(
+      it_diff_files     = lt_new
+      it_diff_files_old = lt_old ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_diff_new->mv_set_patch_by_old_called
+      msg = |set_patch_by_old_diff should not be called for unpatched lines| ).
+
+  ENDMETHOD.
+
+  METHOD file_not_in_old_skipped.
+
+    DATA: lt_new       TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          lt_old       TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff_new  TYPE REF TO ltd_diff_double,
+          lo_diff_old  TYPE REF TO ltd_diff_double,
+          ls_diff_old  TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff_new.
+    CREATE OBJECT lo_diff_old.
+
+    ls_diff_old-patch_flag = abap_true.
+    INSERT ls_diff_old INTO TABLE lo_diff_old->mt_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'zother.prog.abap'.
+    ls_file_diff-o_diff   = lo_diff_old.
+    INSERT ls_file_diff INTO TABLE lt_old.
+
+    ls_file_diff-filename = 'znew.prog.abap'.
+    ls_file_diff-o_diff   = lo_diff_new.
+    INSERT ls_file_diff INTO TABLE lt_new.
+
+    zcl_abapgit_gui_page_patch=>restore_patch_flags_impl(
+      it_diff_files     = lt_new
+      it_diff_files_old = lt_old ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_diff_new->mv_set_patch_by_old_called
+      msg = |set_patch_by_old_diff should not be called for files not in old list| ).
+
+  ENDMETHOD.
+
+  METHOD unbound_old_diff_skipped.
+
+    DATA: lt_new       TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          lt_old       TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff_new  TYPE REF TO ltd_diff_double.
+
+    CREATE OBJECT lo_diff_new.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    " o_diff intentionally left unbound (binary file simulation)
+    INSERT ls_file_diff INTO TABLE lt_old.
+
+    ls_file_diff-o_diff = lo_diff_new.
+    INSERT ls_file_diff INTO TABLE lt_new.
+
+    zcl_abapgit_gui_page_patch=>restore_patch_flags_impl(
+      it_diff_files     = lt_new
+      it_diff_files_old = lt_old ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_diff_new->mv_set_patch_by_old_called
+      msg = |set_patch_by_old_diff should not be called when old diff is unbound| ).
 
   ENDMETHOD.
 

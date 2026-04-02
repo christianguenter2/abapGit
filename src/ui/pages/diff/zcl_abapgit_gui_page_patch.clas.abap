@@ -90,6 +90,12 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         !iv_patch_flag TYPE abap_bool
       RAISING
         zcx_abapgit_exception .
+    CLASS-METHODS restore_patch_flags_impl
+      IMPORTING
+        !it_diff_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs
+        !it_diff_files_old TYPE zif_abapgit_gui_diff=>ty_file_diffs
+      RAISING
+        zcx_abapgit_exception .
     DATA mo_stage TYPE REF TO zcl_abapgit_stage .
     DATA mv_section_count TYPE i .
     DATA mv_pushed TYPE abap_bool .
@@ -552,15 +558,23 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD restore_patch_flags.
 
-    DATA:
-      lt_diff_old TYPE zif_abapgit_definitions=>ty_diffs_tt.
+    restore_patch_flags_impl(
+      it_diff_files     = mt_diff_files
+      it_diff_files_old = it_diff_files_old ).
+
+  ENDMETHOD.
+
+
+  METHOD restore_patch_flags_impl.
+
+    DATA lt_diff_old TYPE zif_abapgit_definitions=>ty_diffs_tt.
 
     FIELD-SYMBOLS:
-      <ls_diff_file>     LIKE LINE OF mt_diff_files,
+      <ls_diff_file>     LIKE LINE OF it_diff_files,
       <ls_diff_file_old> LIKE LINE OF it_diff_files_old,
       <ls_diff_old>      TYPE zif_abapgit_definitions=>ty_diff.
 
-    LOOP AT mt_diff_files ASSIGNING <ls_diff_file>.
+    LOOP AT it_diff_files ASSIGNING <ls_diff_file>.
 
       READ TABLE it_diff_files_old ASSIGNING <ls_diff_file_old>
                                    WITH KEY secondary
