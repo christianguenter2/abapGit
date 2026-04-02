@@ -83,6 +83,13 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         !iv_id          TYPE string
         !iv_is_possible TYPE abap_bool
         !iv_patched     TYPE abap_bool .
+    CLASS-METHODS apply_patch_to_diff
+      IMPORTING
+        !io_diff       TYPE REF TO zif_abapgit_diff
+        !is_diff_line  TYPE zif_abapgit_definitions=>ty_diff
+        !iv_patch_flag TYPE abap_bool
+      RAISING
+        zcx_abapgit_exception .
     DATA mo_stage TYPE REF TO zcl_abapgit_stage .
     DATA mv_section_count TYPE i .
     DATA mv_pushed TYPE abap_bool .
@@ -285,29 +292,37 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD apply_patch_for.
 
-    DATA: lo_diff      TYPE REF TO zif_abapgit_diff,
-          ls_diff_line TYPE zif_abapgit_definitions=>ty_diff,
-          lv_line      TYPE i.
+    DATA lo_diff TYPE REF TO zif_abapgit_diff.
 
     lo_diff = get_diff_object( iv_filename ).
 
-    ls_diff_line = get_diff_line( io_diff       = lo_diff
-                                  iv_line_index = iv_line_index ).
+    apply_patch_to_diff(
+      io_diff       = lo_diff
+      is_diff_line  = get_diff_line( io_diff       = lo_diff
+                                     iv_line_index = iv_line_index )
+      iv_patch_flag = iv_patch_flag ).
 
-    CASE ls_diff_line-result.
+  ENDMETHOD.
+
+
+  METHOD apply_patch_to_diff.
+
+    DATA lv_line TYPE i.
+
+    CASE is_diff_line-result.
       WHEN zif_abapgit_definitions=>c_diff-update
         OR zif_abapgit_definitions=>c_diff-insert.
 
-        lv_line = ls_diff_line-new_num.
+        lv_line = is_diff_line-new_num.
 
-        lo_diff->set_patch_new( iv_line_new   = lv_line
+        io_diff->set_patch_new( iv_line_new   = lv_line
                                 iv_patch_flag = iv_patch_flag ).
 
       WHEN zif_abapgit_definitions=>c_diff-delete.
 
-        lv_line = ls_diff_line-old_num.
+        lv_line = is_diff_line-old_num.
 
-        lo_diff->set_patch_old( iv_line_old   = lv_line
+        io_diff->set_patch_old( iv_line_old   = lv_line
                                 iv_patch_flag = iv_patch_flag ).
 
     ENDCASE.

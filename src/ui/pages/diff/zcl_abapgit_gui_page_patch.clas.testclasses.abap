@@ -122,7 +122,13 @@ ENDCLASS.
 CLASS ltd_diff_double DEFINITION FOR TESTING.
   PUBLIC SECTION.
     INTERFACES zif_abapgit_diff.
-    DATA mt_diff TYPE zif_abapgit_definitions=>ty_diffs_tt.
+    DATA mt_diff               TYPE zif_abapgit_definitions=>ty_diffs_tt.
+    DATA mv_set_patch_new_called TYPE abap_bool.
+    DATA mv_set_patch_new_line   TYPE i.
+    DATA mv_set_patch_new_flag   TYPE abap_bool.
+    DATA mv_set_patch_old_called TYPE abap_bool.
+    DATA mv_set_patch_old_line   TYPE i.
+    DATA mv_set_patch_old_flag   TYPE abap_bool.
 ENDCLASS.
 
 CLASS ltd_diff_double IMPLEMENTATION.
@@ -134,8 +140,14 @@ CLASS ltd_diff_double IMPLEMENTATION.
   METHOD zif_abapgit_diff~stats.
   ENDMETHOD.
   METHOD zif_abapgit_diff~set_patch_new.
+    mv_set_patch_new_called = abap_true.
+    mv_set_patch_new_line   = iv_line_new.
+    mv_set_patch_new_flag   = iv_patch_flag.
   ENDMETHOD.
   METHOD zif_abapgit_diff~set_patch_old.
+    mv_set_patch_old_called = abap_true.
+    mv_set_patch_old_line   = iv_line_old.
+    mv_set_patch_old_flag   = iv_patch_flag.
   ENDMETHOD.
   METHOD zif_abapgit_diff~get_beacons.
   ENDMETHOD.
@@ -157,11 +169,26 @@ CLASS ltcl_get_diff_line DEFINITION FINAL FOR TESTING
 
 ENDCLASS.
 
+
+CLASS ltcl_apply_patch_to_diff DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      update_sets_patch_new FOR TESTING RAISING cx_static_check,
+      insert_sets_patch_new FOR TESTING RAISING cx_static_check,
+      delete_sets_patch_old FOR TESTING RAISING cx_static_check,
+      unchanged_sets_nothing FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
 CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_is_patch_line_possible
                                                           ltcl_are_all_lines_patched
                                                           ltcl_render_patch_cell
-                                                          ltcl_get_diff_line.
+                                                          ltcl_get_diff_line
+                                                          ltcl_apply_patch_to_diff.
 
 CLASS ltcl_render_patch_cell IMPLEMENTATION.
 
@@ -535,6 +562,117 @@ CLASS ltcl_are_all_lines_patched IMPLEMENTATION.
     cl_abap_unit_assert=>assert_false(
       act = lv_result
       msg = |Empty diff should return false| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_apply_patch_to_diff IMPLEMENTATION.
+
+  METHOD update_sets_patch_new.
+
+    DATA: lo_diff      TYPE REF TO ltd_diff_double,
+          ls_diff_line TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff.
+    ls_diff_line-result  = zif_abapgit_definitions=>c_diff-update.
+    ls_diff_line-new_num = 42.
+
+    zcl_abapgit_gui_page_patch=>apply_patch_to_diff(
+      io_diff       = lo_diff
+      is_diff_line  = ls_diff_line
+      iv_patch_flag = abap_true ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_diff->mv_set_patch_new_called
+      msg = |set_patch_new should be called for update| ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = 42
+      act = lo_diff->mv_set_patch_new_line
+      msg = |new_num should be passed to set_patch_new| ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_diff->mv_set_patch_new_flag
+      msg = |patch_flag should be passed through| ).
+
+  ENDMETHOD.
+
+  METHOD insert_sets_patch_new.
+
+    DATA: lo_diff      TYPE REF TO ltd_diff_double,
+          ls_diff_line TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff.
+    ls_diff_line-result  = zif_abapgit_definitions=>c_diff-insert.
+    ls_diff_line-new_num = 7.
+
+    zcl_abapgit_gui_page_patch=>apply_patch_to_diff(
+      io_diff       = lo_diff
+      is_diff_line  = ls_diff_line
+      iv_patch_flag = abap_true ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_diff->mv_set_patch_new_called
+      msg = |set_patch_new should be called for insert| ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = 7
+      act = lo_diff->mv_set_patch_new_line
+      msg = |new_num should be passed to set_patch_new| ).
+
+  ENDMETHOD.
+
+  METHOD delete_sets_patch_old.
+
+    DATA: lo_diff      TYPE REF TO ltd_diff_double,
+          ls_diff_line TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff.
+    ls_diff_line-result  = zif_abapgit_definitions=>c_diff-delete.
+    ls_diff_line-old_num = 15.
+
+    zcl_abapgit_gui_page_patch=>apply_patch_to_diff(
+      io_diff       = lo_diff
+      is_diff_line  = ls_diff_line
+      iv_patch_flag = abap_false ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_diff->mv_set_patch_old_called
+      msg = |set_patch_old should be called for delete| ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = 15
+      act = lo_diff->mv_set_patch_old_line
+      msg = |old_num should be passed to set_patch_old| ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_diff->mv_set_patch_old_flag
+      msg = |patch_flag false should be passed through| ).
+
+  ENDMETHOD.
+
+  METHOD unchanged_sets_nothing.
+
+    DATA: lo_diff      TYPE REF TO ltd_diff_double,
+          ls_diff_line TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff.
+    ls_diff_line-result = zif_abapgit_definitions=>c_diff-unchanged.
+
+    zcl_abapgit_gui_page_patch=>apply_patch_to_diff(
+      io_diff       = lo_diff
+      is_diff_line  = ls_diff_line
+      iv_patch_flag = abap_true ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_diff->mv_set_patch_new_called
+      msg = |set_patch_new should not be called for equal lines| ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_diff->mv_set_patch_old_called
+      msg = |set_patch_old should not be called for equal lines| ).
 
   ENDMETHOD.
 
