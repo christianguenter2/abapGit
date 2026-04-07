@@ -104,6 +104,13 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         VALUE(ro_diff) TYPE REF TO zif_abapgit_diff
       RAISING
         zcx_abapgit_exception .
+    CLASS-METHODS apply_patch_all_to
+      IMPORTING
+        !it_diff_files TYPE zif_abapgit_gui_diff=>ty_file_diffs
+        !iv_patch      TYPE string
+        !iv_patch_flag TYPE abap_bool
+      RAISING
+        zcx_abapgit_exception .
     DATA mo_stage TYPE REF TO zcl_abapgit_stage .
     DATA mv_section_count TYPE i .
     DATA mv_pushed TYPE abap_bool .
@@ -143,13 +150,6 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
     METHODS apply_patch_all
       IMPORTING
         !iv_patch      TYPE string
-        !iv_patch_flag TYPE abap_bool
-      RAISING
-        zcx_abapgit_exception .
-    METHODS apply_patch_for
-      IMPORTING
-        !iv_filename   TYPE string
-        !iv_line_index TYPE string
         !iv_patch_flag TYPE abap_bool
       RAISING
         zcx_abapgit_exception .
@@ -278,15 +278,28 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD apply_patch_all.
 
+    apply_patch_all_to(
+      it_diff_files = mt_diff_files
+      iv_patch      = iv_patch
+      iv_patch_flag = iv_patch_flag ).
+
+  ENDMETHOD.
+
+
+  METHOD apply_patch_all_to.
+
     DATA: lv_filename   TYPE string,
           lt_patch      TYPE string_table,
-          lv_line_index TYPE string.
+          lv_line_index TYPE string,
+          lo_diff       TYPE REF TO zif_abapgit_diff.
 
-    FIELD-SYMBOLS: <lv_patch>     TYPE LINE OF string_table.
+    FIELD-SYMBOLS: <lv_patch> TYPE LINE OF string_table.
 
     SPLIT iv_patch AT ',' INTO TABLE lt_patch.
 
     LOOP AT lt_patch ASSIGNING <lv_patch>.
+
+      CHECK <lv_patch> IS NOT INITIAL.
 
       get_patch_data(
         EXPORTING
@@ -295,26 +308,17 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
           ev_filename   = lv_filename
           ev_line_index = lv_line_index ).
 
-      apply_patch_for( iv_filename   = lv_filename
-                       iv_line_index = lv_line_index
-                       iv_patch_flag = iv_patch_flag ).
+      lo_diff = get_diff_object_from(
+        it_diff_files = it_diff_files
+        iv_filename   = lv_filename ).
+
+      apply_patch_to_diff(
+        io_diff       = lo_diff
+        is_diff_line  = get_diff_line( io_diff       = lo_diff
+                                       iv_line_index = lv_line_index )
+        iv_patch_flag = iv_patch_flag ).
 
     ENDLOOP.
-
-  ENDMETHOD.
-
-
-  METHOD apply_patch_for.
-
-    DATA lo_diff TYPE REF TO zif_abapgit_diff.
-
-    lo_diff = get_diff_object( iv_filename ).
-
-    apply_patch_to_diff(
-      io_diff       = lo_diff
-      is_diff_line  = get_diff_line( io_diff       = lo_diff
-                                     iv_line_index = iv_line_index )
-      iv_patch_flag = iv_patch_flag ).
 
   ENDMETHOD.
 
