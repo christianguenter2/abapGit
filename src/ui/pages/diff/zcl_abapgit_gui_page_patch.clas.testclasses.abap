@@ -75,6 +75,7 @@ CLASS ltd_html_double DEFINITION FOR TESTING.
     DATA mv_checkbox_called  TYPE abap_bool.
     DATA mv_checkbox_id      TYPE string.
     DATA mv_checkbox_checked TYPE abap_bool.
+    DATA mv_add_a_called     TYPE abap_bool.
 ENDCLASS.
 
 CLASS ltd_html_double IMPLEMENTATION.
@@ -95,6 +96,7 @@ CLASS ltd_html_double IMPLEMENTATION.
   METHOD zif_abapgit_html~is_empty.
   ENDMETHOD.
   METHOD zif_abapgit_html~add_a.
+    mv_add_a_called = abap_true.
     ri_self = me.
   ENDMETHOD.
   METHOD zif_abapgit_html~a.
@@ -230,6 +232,30 @@ CLASS ltcl_apply_patch_all_to DEFINITION FINAL FOR TESTING
 
 ENDCLASS.
 
+
+CLASS ltcl_render_patch_head DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      checkbox_has_patch_file_prefix FOR TESTING RAISING cx_static_check,
+      checkbox_uses_normalized_path  FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
+
+CLASS ltcl_render_diff_head DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      empty_obj_skips_link    FOR TESTING RAISING cx_static_check,
+      obj_with_data_adds_link FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
 CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_is_patch_line_possible
                                                           ltcl_are_all_lines_patched
@@ -238,7 +264,9 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_apply_patch_to_diff
                                                           ltcl_restore_patch_flags
                                                           ltcl_get_diff_object
-                                                          ltcl_apply_patch_all_to.
+                                                          ltcl_apply_patch_all_to
+                                                          ltcl_render_patch_head
+                                                          ltcl_render_diff_head.
 
 CLASS ltcl_render_patch_cell IMPLEMENTATION.
 
@@ -1135,6 +1163,95 @@ CLASS ltcl_apply_patch_all_to IMPLEMENTATION.
     cl_abap_unit_assert=>assert_false(
       act = lo_diff->mv_set_patch_new_called
       msg = |No calls should happen for empty patch| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_render_patch_head IMPLEMENTATION.
+
+  METHOD checkbox_has_patch_file_prefix.
+
+    DATA: lo_html TYPE REF TO ltd_html_double,
+          ls_diff TYPE zif_abapgit_gui_diff=>ty_file_diff.
+
+    CREATE OBJECT lo_html.
+    ls_diff-path     = '/src/'.
+    ls_diff-filename = 'ztest.prog.abap'.
+
+    zcl_abapgit_gui_page_patch=>render_patch_head(
+      ii_html = lo_html
+      is_diff = ls_diff ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_html->mv_checkbox_called
+      msg = |Checkbox should be rendered| ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = boolc( lo_html->mv_checkbox_id CP 'patch_file_*' )
+      msg = |Checkbox ID should start with patch_file_| ).
+
+  ENDMETHOD.
+
+  METHOD checkbox_uses_normalized_path.
+
+    DATA: lo_html TYPE REF TO ltd_html_double,
+          ls_diff TYPE zif_abapgit_gui_diff=>ty_file_diff.
+
+    CREATE OBJECT lo_html.
+    ls_diff-path     = '/src/'.
+    ls_diff-filename = 'ztest.prog.abap'.
+
+    zcl_abapgit_gui_page_patch=>render_patch_head(
+      ii_html = lo_html
+      is_diff = ls_diff ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = |patch_file__src__ztest_prog_abap|
+      act = lo_html->mv_checkbox_id
+      msg = |Checkbox ID should use normalized path and filename| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_render_diff_head IMPLEMENTATION.
+
+  METHOD empty_obj_skips_link.
+
+    DATA: lo_html TYPE REF TO ltd_html_double,
+          ls_diff TYPE zif_abapgit_gui_diff=>ty_file_diff.
+
+    CREATE OBJECT lo_html.
+
+    zcl_abapgit_gui_page_patch=>render_diff_head_impl(
+      ii_html = lo_html
+      is_diff = ls_diff ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_html->mv_add_a_called
+      msg = |No link should be rendered when obj_type is empty| ).
+
+  ENDMETHOD.
+
+  METHOD obj_with_data_adds_link.
+
+    DATA: lo_html TYPE REF TO ltd_html_double,
+          ls_diff TYPE zif_abapgit_gui_diff=>ty_file_diff.
+
+    CREATE OBJECT lo_html.
+    ls_diff-obj_type = 'PROG'.
+    ls_diff-obj_name = 'ZTEST'.
+
+    zcl_abapgit_gui_page_patch=>render_diff_head_impl(
+      ii_html = lo_html
+      is_diff = ls_diff ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_html->mv_add_a_called
+      msg = |Link should be rendered when obj_type and obj_name are set| ).
 
   ENDMETHOD.
 

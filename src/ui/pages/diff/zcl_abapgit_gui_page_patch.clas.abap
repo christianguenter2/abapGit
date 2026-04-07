@@ -111,6 +111,14 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         !iv_patch_flag TYPE abap_bool
       RAISING
         zcx_abapgit_exception .
+    CLASS-METHODS render_patch_head
+      IMPORTING
+        !ii_html TYPE REF TO zif_abapgit_html
+        !is_diff TYPE zif_abapgit_gui_diff=>ty_file_diff .
+    CLASS-METHODS render_diff_head_impl
+      IMPORTING
+        !ii_html TYPE REF TO zif_abapgit_html
+        !is_diff TYPE zif_abapgit_gui_diff=>ty_file_diff .
     DATA mo_stage TYPE REF TO zcl_abapgit_stage .
     DATA mv_section_count TYPE i .
     DATA mv_pushed TYPE abap_bool .
@@ -125,10 +133,6 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         !iv_index     TYPE sy-tabix
       RAISING
         zcx_abapgit_exception .
-    METHODS render_patch_head
-      IMPORTING
-        !ii_html TYPE REF TO zif_abapgit_html
-        !is_diff TYPE zif_abapgit_gui_diff=>ty_file_diff .
     METHODS start_staging
       IMPORTING
         !ii_event TYPE REF TO zif_abapgit_gui_event
@@ -652,7 +656,7 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD zif_abapgit_gui_diff_extra~render_diff_head_after_state.
+  METHOD render_diff_head_impl.
 
     DATA: lv_act_id TYPE string.
 
@@ -670,6 +674,15 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
                       iv_class = |url| ).
       ii_html->add( '</span>' ).
     ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD zif_abapgit_gui_diff_extra~render_diff_head_after_state.
+
+    render_diff_head_impl(
+      ii_html = ii_html
+      is_diff = is_diff ).
 
   ENDMETHOD.
 
