@@ -96,7 +96,7 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         !it_diff_files_old TYPE zif_abapgit_gui_diff=>ty_file_diffs
       RAISING
         zcx_abapgit_exception .
-    CLASS-METHODS get_diff_object_from
+    CLASS-METHODS get_diff_object_impl
       IMPORTING
         !it_diff_files TYPE zif_abapgit_gui_diff=>ty_file_diffs
         !iv_filename   TYPE string
@@ -104,7 +104,7 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         VALUE(ro_diff) TYPE REF TO zif_abapgit_diff
       RAISING
         zcx_abapgit_exception .
-    CLASS-METHODS apply_patch_all_to
+    CLASS-METHODS apply_patch_all_impl
       IMPORTING
         !it_diff_files TYPE zif_abapgit_gui_diff=>ty_file_diffs
         !iv_patch      TYPE string
@@ -300,7 +300,7 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD apply_patch_all.
 
-    apply_patch_all_to(
+    apply_patch_all_impl(
       it_diff_files = mt_diff_files
       iv_patch      = iv_patch
       iv_patch_flag = iv_patch_flag ).
@@ -308,7 +308,7 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD apply_patch_all_to.
+  METHOD apply_patch_all_impl.
 
     DATA: lv_filename   TYPE string,
           lt_patch      TYPE string_table,
@@ -330,7 +330,7 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
           ev_filename   = lv_filename
           ev_line_index = lv_line_index ).
 
-      lo_diff = get_diff_object_from(
+      lo_diff = get_diff_object_impl(
         it_diff_files = it_diff_files
         iv_filename   = lv_filename ).
 
@@ -481,14 +481,14 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD get_diff_object.
 
-    ro_diff = get_diff_object_from(
+    ro_diff = get_diff_object_impl(
       it_diff_files = mt_diff_files
       iv_filename   = iv_filename ).
 
   ENDMETHOD.
 
 
-  METHOD get_diff_object_from.
+  METHOD get_diff_object_impl.
 
     FIELD-SYMBOLS: <ls_diff_file> LIKE LINE OF it_diff_files.
 

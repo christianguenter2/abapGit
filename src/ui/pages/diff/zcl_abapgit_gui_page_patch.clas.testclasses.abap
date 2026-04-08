@@ -245,7 +245,7 @@ CLASS ltcl_get_diff_object DEFINITION FINAL FOR TESTING
 ENDCLASS.
 
 
-CLASS ltcl_apply_patch_all_to DEFINITION FINAL FOR TESTING
+CLASS ltcl_apply_patch_all_impl DEFINITION FINAL FOR TESTING
   DURATION SHORT
   RISK LEVEL HARMLESS.
 
@@ -321,7 +321,7 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_apply_patch_to_diff
                                                           ltcl_restore_patch_flags
                                                           ltcl_get_diff_object
-                                                          ltcl_apply_patch_all_to
+                                                          ltcl_apply_patch_all_impl
                                                           ltcl_render_patch_head
                                                           ltcl_render_diff_head
                                                           ltcl_get_staging_lstate
@@ -971,7 +971,7 @@ CLASS ltcl_get_diff_object IMPLEMENTATION.
     ls_file_diff-o_diff   = lo_diff.
     INSERT ls_file_diff INTO TABLE lt_files.
 
-    lo_result = zcl_abapgit_gui_page_patch=>get_diff_object_from(
+    lo_result = zcl_abapgit_gui_page_patch=>get_diff_object_impl(
       it_diff_files = lt_files
       iv_filename   = '_src__ztest_clas_abap' ).
 
@@ -992,7 +992,7 @@ CLASS ltcl_get_diff_object IMPLEMENTATION.
           lx_error TYPE REF TO zcx_abapgit_exception.
 
     TRY.
-        zcl_abapgit_gui_page_patch=>get_diff_object_from(
+        zcl_abapgit_gui_page_patch=>get_diff_object_impl(
           it_diff_files = lt_files
           iv_filename   = 'unknown_file' ).
 
@@ -1027,7 +1027,7 @@ CLASS ltcl_get_diff_object IMPLEMENTATION.
     ls_file_diff-o_diff   = lo_diff_b.
     INSERT ls_file_diff INTO TABLE lt_files.
 
-    lo_result = zcl_abapgit_gui_page_patch=>get_diff_object_from(
+    lo_result = zcl_abapgit_gui_page_patch=>get_diff_object_impl(
       it_diff_files = lt_files
       iv_filename   = '_src__zclass_b_clas_abap' ).
 
@@ -1099,7 +1099,7 @@ CLASS ltcl_get_diff_line IMPLEMENTATION.
 ENDCLASS.
 
 
-CLASS ltcl_apply_patch_all_to IMPLEMENTATION.
+CLASS ltcl_apply_patch_all_impl IMPLEMENTATION.
 
   METHOD single_entry_add.
 
@@ -1119,7 +1119,7 @@ CLASS ltcl_apply_patch_all_to IMPLEMENTATION.
     ls_file_diff-o_diff   = lo_diff.
     INSERT ls_file_diff INTO TABLE lt_files.
 
-    zcl_abapgit_gui_page_patch=>apply_patch_all_to(
+    zcl_abapgit_gui_page_patch=>apply_patch_all_impl(
       it_diff_files = lt_files
       iv_patch      = |patch_line__src__ztest_prog_abap_0_1|
       iv_patch_flag = abap_true ).
@@ -1152,7 +1152,7 @@ CLASS ltcl_apply_patch_all_to IMPLEMENTATION.
     ls_file_diff-o_diff   = lo_diff.
     INSERT ls_file_diff INTO TABLE lt_files.
 
-    zcl_abapgit_gui_page_patch=>apply_patch_all_to(
+    zcl_abapgit_gui_page_patch=>apply_patch_all_impl(
       it_diff_files = lt_files
       iv_patch      = |patch_line__src__ztest_prog_abap_0_1|
       iv_patch_flag = abap_false ).
@@ -1192,7 +1192,7 @@ CLASS ltcl_apply_patch_all_to IMPLEMENTATION.
     ls_file_diff-o_diff   = lo_diff_b.
     INSERT ls_file_diff INTO TABLE lt_files.
 
-    zcl_abapgit_gui_page_patch=>apply_patch_all_to(
+    zcl_abapgit_gui_page_patch=>apply_patch_all_impl(
       it_diff_files = lt_files
       iv_patch      = |patch_line__src__zclass_a_clas_abap_0_1,patch_line__src__zclass_b_clas_abap_0_1|
       iv_patch_flag = abap_true ).
@@ -1214,7 +1214,7 @@ CLASS ltcl_apply_patch_all_to IMPLEMENTATION.
 
     CREATE OBJECT lo_diff.
 
-    zcl_abapgit_gui_page_patch=>apply_patch_all_to(
+    zcl_abapgit_gui_page_patch=>apply_patch_all_impl(
       it_diff_files = lt_files
       iv_patch      = ||
       iv_patch_flag = abap_true ).
