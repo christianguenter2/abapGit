@@ -166,6 +166,32 @@ CLASS ltd_diff_double IMPLEMENTATION.
 ENDCLASS.
 
 
+CLASS ltd_stage_double DEFINITION FOR TESTING INHERITING FROM zcl_abapgit_stage.
+  PUBLIC SECTION.
+    DATA mv_add_called TYPE abap_bool.
+    DATA mv_rm_called  TYPE abap_bool.
+    DATA mv_add_lstate TYPE zif_abapgit_git_definitions=>ty_item_state.
+    DATA mv_rm_lstate  TYPE zif_abapgit_git_definitions=>ty_item_state.
+    METHODS add REDEFINITION.
+    METHODS rm  REDEFINITION.
+ENDCLASS.
+
+CLASS ltd_stage_double IMPLEMENTATION.
+  METHOD add.
+    mv_add_called = abap_true.
+    IF is_status IS SUPPLIED.
+      mv_add_lstate = is_status-lstate.
+    ENDIF.
+  ENDMETHOD.
+  METHOD rm.
+    mv_rm_called = abap_true.
+    IF is_status IS SUPPLIED.
+      mv_rm_lstate = is_status-lstate.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+
 CLASS ltcl_get_diff_line DEFINITION FINAL FOR TESTING
   DURATION SHORT
   RISK LEVEL HARMLESS.
@@ -271,6 +297,22 @@ CLASS ltcl_render_diff_head DEFINITION FINAL FOR TESTING
 
 ENDCLASS.
 
+
+CLASS ltcl_add_to_stage DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      nothing_patched_raises       FOR TESTING RAISING cx_static_check,
+      unbound_diff_is_skipped      FOR TESTING RAISING cx_static_check,
+      no_patch_flags_raises        FOR TESTING RAISING cx_static_check,
+      deleted_all_patched_calls_rm FOR TESTING RAISING cx_static_check,
+      added_all_patched_calls_add  FOR TESTING RAISING cx_static_check,
+      modified_patched_calls_add   FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
 CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_is_patch_line_possible
                                                           ltcl_are_all_lines_patched
@@ -282,7 +324,8 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_apply_patch_all_to
                                                           ltcl_render_patch_head
                                                           ltcl_render_diff_head
-                                                          ltcl_get_staging_lstate.
+                                                          ltcl_get_staging_lstate
+                                                          ltcl_add_to_stage.
 
 CLASS ltcl_render_patch_cell IMPLEMENTATION.
 
@@ -1377,6 +1420,201 @@ CLASS ltcl_render_diff_head IMPLEMENTATION.
     cl_abap_unit_assert=>assert_true(
       act = lo_html->mv_add_a_called
       msg = |Link should be rendered when obj_type and obj_name are set| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_add_to_stage IMPLEMENTATION.
+
+  METHOD nothing_patched_raises.
+
+    DATA: lt_files TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          lo_stage TYPE REF TO ltd_stage_double,
+          lx_error TYPE REF TO zcx_abapgit_exception.
+
+    CREATE OBJECT lo_stage.
+
+    TRY.
+        zcl_abapgit_gui_page_patch=>add_to_stage_impl(
+          it_diff_files = lt_files
+          io_stage      = lo_stage ).
+        cl_abap_unit_assert=>fail( ).
+      CATCH zcx_abapgit_exception INTO lx_error.
+        cl_abap_unit_assert=>assert_equals(
+          exp = |Nothing added|
+          act = lx_error->get_text( )
+          msg = |Empty diff files should raise Nothing added| ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+  METHOD unbound_diff_is_skipped.
+
+    DATA: lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_stage     TYPE REF TO ltd_stage_double,
+          lx_error     TYPE REF TO zcx_abapgit_exception.
+
+    CREATE OBJECT lo_stage.
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    TRY.
+        zcl_abapgit_gui_page_patch=>add_to_stage_impl(
+          it_diff_files = lt_files
+          io_stage      = lo_stage ).
+        cl_abap_unit_assert=>fail( ).
+      CATCH zcx_abapgit_exception INTO lx_error.
+        cl_abap_unit_assert=>assert_equals(
+          exp = |Nothing added|
+          act = lx_error->get_text( )
+          msg = |Unbound diff should be skipped and raise Nothing added| ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+  METHOD no_patch_flags_raises.
+
+    DATA: lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff      TYPE REF TO ltd_diff_double,
+          lo_stage     TYPE REF TO ltd_stage_double,
+          ls_diff      TYPE zif_abapgit_definitions=>ty_diff,
+          lx_error     TYPE REF TO zcx_abapgit_exception.
+
+    CREATE OBJECT lo_diff.
+    CREATE OBJECT lo_stage.
+
+    ls_diff-result     = zif_abapgit_definitions=>c_diff-update.
+    ls_diff-patch_flag = abap_false.
+    INSERT ls_diff INTO TABLE lo_diff->mt_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-o_diff   = lo_diff.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    TRY.
+        zcl_abapgit_gui_page_patch=>add_to_stage_impl(
+          it_diff_files = lt_files
+          io_stage      = lo_stage ).
+        cl_abap_unit_assert=>fail( ).
+      CATCH zcx_abapgit_exception INTO lx_error.
+        cl_abap_unit_assert=>assert_equals(
+          exp = |Nothing added|
+          act = lx_error->get_text( )
+          msg = |No patch flags set should raise Nothing added| ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+  METHOD deleted_all_patched_calls_rm.
+
+    DATA: lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff      TYPE REF TO ltd_diff_double,
+          lo_stage     TYPE REF TO ltd_stage_double,
+          ls_diff      TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff.
+    CREATE OBJECT lo_stage.
+
+    ls_diff-result     = zif_abapgit_definitions=>c_diff-delete.
+    ls_diff-patch_flag = abap_true.
+    INSERT ls_diff INTO TABLE lo_diff->mt_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-lstate   = zif_abapgit_definitions=>c_state-deleted.
+    ls_file_diff-o_diff   = lo_diff.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    zcl_abapgit_gui_page_patch=>add_to_stage_impl(
+      it_diff_files = lt_files
+      io_stage      = lo_stage ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_stage->mv_rm_called
+      msg = |rm should be called for deleted file with all lines patched| ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_stage->mv_add_called
+      msg = |add should not be called for deleted file| ).
+
+  ENDMETHOD.
+
+  METHOD added_all_patched_calls_add.
+
+    DATA: lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff      TYPE REF TO ltd_diff_double,
+          lo_stage     TYPE REF TO ltd_stage_double,
+          ls_diff      TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff.
+    CREATE OBJECT lo_stage.
+
+    ls_diff-result     = zif_abapgit_definitions=>c_diff-insert.
+    ls_diff-patch_flag = abap_true.
+    INSERT ls_diff INTO TABLE lo_diff->mt_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-lstate   = zif_abapgit_definitions=>c_state-added.
+    ls_file_diff-o_diff   = lo_diff.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    zcl_abapgit_gui_page_patch=>add_to_stage_impl(
+      it_diff_files = lt_files
+      io_stage      = lo_stage ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_stage->mv_add_called
+      msg = |add should be called for added file with all lines patched| ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_stage->mv_rm_called
+      msg = |rm should not be called for added file| ).
+
+  ENDMETHOD.
+
+  METHOD modified_patched_calls_add.
+
+    DATA: lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff      TYPE REF TO ltd_diff_double,
+          lo_stage     TYPE REF TO ltd_stage_double,
+          ls_diff      TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff.
+    CREATE OBJECT lo_stage.
+
+    ls_diff-result     = zif_abapgit_definitions=>c_diff-update.
+    ls_diff-patch_flag = abap_true.
+    INSERT ls_diff INTO TABLE lo_diff->mt_diff.
+    ls_diff-patch_flag = abap_false.
+    INSERT ls_diff INTO TABLE lo_diff->mt_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-lstate   = zif_abapgit_definitions=>c_state-modified.
+    ls_file_diff-o_diff   = lo_diff.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    zcl_abapgit_gui_page_patch=>add_to_stage_impl(
+      it_diff_files = lt_files
+      io_stage      = lo_stage ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_stage->mv_add_called
+      msg = |add should be called for partially patched modified file| ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_stage->mv_rm_called
+      msg = |rm should not be called for modified file| ).
 
   ENDMETHOD.
 
