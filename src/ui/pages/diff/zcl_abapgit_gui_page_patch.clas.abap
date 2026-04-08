@@ -119,6 +119,12 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
       IMPORTING
         !ii_html TYPE REF TO zif_abapgit_html
         !is_diff TYPE zif_abapgit_gui_diff=>ty_file_diff .
+    CLASS-METHODS get_staging_lstate
+      IMPORTING
+        !iv_lstate       TYPE zif_abapgit_git_definitions=>ty_item_state
+        !it_diff         TYPE zif_abapgit_definitions=>ty_diffs_tt
+      RETURNING
+        VALUE(rv_lstate) TYPE zif_abapgit_git_definitions=>ty_item_state .
     DATA mo_stage TYPE REF TO zcl_abapgit_stage .
     DATA mv_section_count TYPE i .
     DATA mv_pushed TYPE abap_bool .
@@ -247,21 +253,18 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
       lv_patch = lo_git_add_patch->get_patch_binary( ).
 
-      IF <ls_diff_file>-lstate = 'D' AND are_all_lines_patched( lt_diff ) = abap_true.
+      ls_status-lstate = get_staging_lstate(
+        iv_lstate = <ls_diff_file>-lstate
+        it_diff   = lt_diff ).
 
-        ls_status-lstate = zif_abapgit_definitions=>c_state-deleted.
+      IF ls_status-lstate = zif_abapgit_definitions=>c_state-deleted.
+
         mo_stage->rm(
           iv_path     = <ls_diff_file>-path
           is_status   = ls_status
           iv_filename = <ls_diff_file>-filename ).
 
       ELSE.
-
-        IF <ls_diff_file>-lstate = 'A' AND are_all_lines_patched( lt_diff ) = abap_true.
-          ls_status-lstate = zif_abapgit_definitions=>c_state-added.
-        ELSE.
-          ls_status-lstate = zif_abapgit_definitions=>c_state-modified.
-        ENDIF.
 
         mo_stage->add(
           iv_path     = <ls_diff_file>-path
@@ -652,6 +655,21 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
     ii_html->add( |<th class="patch">| ).
     ii_html->add_checkbox( |patch_section_{ get_normalized_fname_with_path( is_diff ) }_{ mv_section_count }| ).
     ii_html->add( '</th>' ).
+
+  ENDMETHOD.
+
+
+  METHOD get_staging_lstate.
+
+    IF iv_lstate = zif_abapgit_definitions=>c_state-deleted
+        AND are_all_lines_patched( it_diff ) = abap_true.
+      rv_lstate = zif_abapgit_definitions=>c_state-deleted.
+    ELSEIF iv_lstate = zif_abapgit_definitions=>c_state-added
+        AND are_all_lines_patched( it_diff ) = abap_true.
+      rv_lstate = zif_abapgit_definitions=>c_state-added.
+    ELSE.
+      rv_lstate = zif_abapgit_definitions=>c_state-modified.
+    ENDIF.
 
   ENDMETHOD.
 

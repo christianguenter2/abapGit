@@ -233,6 +233,21 @@ CLASS ltcl_apply_patch_all_to DEFINITION FINAL FOR TESTING
 ENDCLASS.
 
 
+CLASS ltcl_get_staging_lstate DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      deleted_when_d_and_all_patched   FOR TESTING RAISING cx_static_check,
+      added_when_a_and_all_patched     FOR TESTING RAISING cx_static_check,
+      modified_when_d_partial_patch    FOR TESTING RAISING cx_static_check,
+      modified_when_a_partial_patch    FOR TESTING RAISING cx_static_check,
+      modified_when_m_regardless       FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
+
 CLASS ltcl_render_patch_head DEFINITION FINAL FOR TESTING
   DURATION SHORT
   RISK LEVEL HARMLESS.
@@ -266,7 +281,8 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_get_diff_object
                                                           ltcl_apply_patch_all_to
                                                           ltcl_render_patch_head
-                                                          ltcl_render_diff_head.
+                                                          ltcl_render_diff_head
+                                                          ltcl_get_staging_lstate.
 
 CLASS ltcl_render_patch_cell IMPLEMENTATION.
 
@@ -1211,6 +1227,115 @@ CLASS ltcl_render_patch_head IMPLEMENTATION.
       exp = |patch_file__src__ztest_prog_abap|
       act = lo_html->mv_checkbox_id
       msg = |Checkbox ID should use normalized path and filename| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_get_staging_lstate IMPLEMENTATION.
+
+  METHOD deleted_when_d_and_all_patched.
+
+    DATA: lt_diff  TYPE zif_abapgit_definitions=>ty_diffs_tt,
+          ls_diff  TYPE zif_abapgit_definitions=>ty_diff,
+          lv_result TYPE zif_abapgit_git_definitions=>ty_item_state.
+
+    ls_diff-patch_flag = abap_true.
+    INSERT ls_diff INTO TABLE lt_diff.
+
+    lv_result = zcl_abapgit_gui_page_patch=>get_staging_lstate(
+      iv_lstate = zif_abapgit_definitions=>c_state-deleted
+      it_diff   = lt_diff ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = zif_abapgit_definitions=>c_state-deleted
+      act = lv_result
+      msg = |Deleted file with all lines patched should return deleted state| ).
+
+  ENDMETHOD.
+
+  METHOD added_when_a_and_all_patched.
+
+    DATA: lt_diff   TYPE zif_abapgit_definitions=>ty_diffs_tt,
+          ls_diff   TYPE zif_abapgit_definitions=>ty_diff,
+          lv_result TYPE zif_abapgit_git_definitions=>ty_item_state.
+
+    ls_diff-patch_flag = abap_true.
+    INSERT ls_diff INTO TABLE lt_diff.
+
+    lv_result = zcl_abapgit_gui_page_patch=>get_staging_lstate(
+      iv_lstate = zif_abapgit_definitions=>c_state-added
+      it_diff   = lt_diff ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = zif_abapgit_definitions=>c_state-added
+      act = lv_result
+      msg = |Added file with all lines patched should return added state| ).
+
+  ENDMETHOD.
+
+  METHOD modified_when_d_partial_patch.
+
+    DATA: lt_diff   TYPE zif_abapgit_definitions=>ty_diffs_tt,
+          ls_diff   TYPE zif_abapgit_definitions=>ty_diff,
+          lv_result TYPE zif_abapgit_git_definitions=>ty_item_state.
+
+    ls_diff-patch_flag = abap_true.
+    INSERT ls_diff INTO TABLE lt_diff.
+    ls_diff-patch_flag = abap_false.
+    INSERT ls_diff INTO TABLE lt_diff.
+
+    lv_result = zcl_abapgit_gui_page_patch=>get_staging_lstate(
+      iv_lstate = zif_abapgit_definitions=>c_state-deleted
+      it_diff   = lt_diff ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = zif_abapgit_definitions=>c_state-modified
+      act = lv_result
+      msg = |Deleted file with partial patch should return modified state| ).
+
+  ENDMETHOD.
+
+  METHOD modified_when_a_partial_patch.
+
+    DATA: lt_diff   TYPE zif_abapgit_definitions=>ty_diffs_tt,
+          ls_diff   TYPE zif_abapgit_definitions=>ty_diff,
+          lv_result TYPE zif_abapgit_git_definitions=>ty_item_state.
+
+    ls_diff-patch_flag = abap_true.
+    INSERT ls_diff INTO TABLE lt_diff.
+    ls_diff-patch_flag = abap_false.
+    INSERT ls_diff INTO TABLE lt_diff.
+
+    lv_result = zcl_abapgit_gui_page_patch=>get_staging_lstate(
+      iv_lstate = zif_abapgit_definitions=>c_state-added
+      it_diff   = lt_diff ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = zif_abapgit_definitions=>c_state-modified
+      act = lv_result
+      msg = |Added file with partial patch should return modified state| ).
+
+  ENDMETHOD.
+
+  METHOD modified_when_m_regardless.
+
+    DATA: lt_diff   TYPE zif_abapgit_definitions=>ty_diffs_tt,
+          ls_diff   TYPE zif_abapgit_definitions=>ty_diff,
+          lv_result TYPE zif_abapgit_git_definitions=>ty_item_state.
+
+    ls_diff-patch_flag = abap_true.
+    INSERT ls_diff INTO TABLE lt_diff.
+
+    lv_result = zcl_abapgit_gui_page_patch=>get_staging_lstate(
+      iv_lstate = zif_abapgit_definitions=>c_state-modified
+      it_diff   = lt_diff ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = zif_abapgit_definitions=>c_state-modified
+      act = lv_result
+      msg = |Modified file should always return modified state| ).
 
   ENDMETHOD.
 
