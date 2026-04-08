@@ -125,6 +125,12 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         !it_diff         TYPE zif_abapgit_definitions=>ty_diffs_tt
       RETURNING
         VALUE(rv_lstate) TYPE zif_abapgit_git_definitions=>ty_item_state .
+    CLASS-METHODS add_to_stage_impl
+      IMPORTING
+        !it_diff_files TYPE zif_abapgit_gui_diff=>ty_file_diffs
+        !io_stage      TYPE REF TO zcl_abapgit_stage
+      RAISING
+        zcx_abapgit_exception .
     DATA mo_stage TYPE REF TO zcl_abapgit_stage .
     DATA mv_section_count TYPE i .
     DATA mv_pushed TYPE abap_bool .
@@ -223,15 +229,24 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD add_to_stage.
 
+    add_to_stage_impl(
+      it_diff_files = mt_diff_files
+      io_stage      = mo_stage ).
+
+  ENDMETHOD.
+
+
+  METHOD add_to_stage_impl.
+
     DATA: lt_diff              TYPE zif_abapgit_definitions=>ty_diffs_tt,
           lv_something_patched TYPE abap_bool,
           ls_status            TYPE zif_abapgit_definitions=>ty_result,
           lv_patch             TYPE xstring,
           lo_git_add_patch     TYPE REF TO zcl_abapgit_git_add_patch.
 
-    FIELD-SYMBOLS: <ls_diff_file> LIKE LINE OF mt_diff_files.
+    FIELD-SYMBOLS: <ls_diff_file> LIKE LINE OF it_diff_files.
 
-    LOOP AT mt_diff_files ASSIGNING <ls_diff_file>.
+    LOOP AT it_diff_files ASSIGNING <ls_diff_file>.
 
       IF <ls_diff_file>-o_diff IS NOT BOUND.
         " When we deal with binary files we don't have a diff object.
@@ -259,14 +274,14 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
       IF ls_status-lstate = zif_abapgit_definitions=>c_state-deleted.
 
-        mo_stage->rm(
+        io_stage->rm(
           iv_path     = <ls_diff_file>-path
           is_status   = ls_status
           iv_filename = <ls_diff_file>-filename ).
 
       ELSE.
 
-        mo_stage->add(
+        io_stage->add(
           iv_path     = <ls_diff_file>-path
           iv_filename = <ls_diff_file>-filename
           is_status   = ls_status
