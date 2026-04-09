@@ -131,6 +131,19 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         !io_stage      TYPE REF TO zcl_abapgit_stage
       RAISING
         zcx_abapgit_exception .
+    CLASS-METHODS render_patch_impl
+      IMPORTING
+        !ii_html          TYPE REF TO zif_abapgit_html
+        !iv_filename      TYPE string
+        !is_diff_line     TYPE zif_abapgit_definitions=>ty_diff
+        !iv_index         TYPE sy-tabix
+        !iv_section_count TYPE i
+        !it_diff_files    TYPE zif_abapgit_gui_diff=>ty_file_diffs
+      RAISING
+        zcx_abapgit_exception .
+    CLASS-METHODS get_hotkey_actions_impl
+      RETURNING
+        VALUE(rt_hotkey_actions) TYPE zif_abapgit_gui_hotkeys=>ty_hotkeys_with_descr .
     DATA mo_stage TYPE REF TO zcl_abapgit_stage .
     DATA mv_section_count TYPE i .
     DATA mv_pushed TYPE abap_bool .
@@ -167,13 +180,6 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
       IMPORTING
         !iv_patch      TYPE string
         !iv_patch_flag TYPE abap_bool
-      RAISING
-        zcx_abapgit_exception .
-    METHODS get_diff_object
-      IMPORTING
-        !iv_filename   TYPE string
-      RETURNING
-        VALUE(ro_diff) TYPE REF TO zif_abapgit_diff
       RAISING
         zcx_abapgit_exception .
     CLASS-METHODS is_patch_line_possible
@@ -479,15 +485,6 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD get_diff_object.
-
-    ro_diff = get_diff_object_impl(
-      it_diff_files = mt_diff_files
-      iv_filename   = iv_filename ).
-
-  ENDMETHOD.
-
-
   METHOD get_diff_object_impl.
 
     FIELD-SYMBOLS: <ls_diff_file> LIKE LINE OF it_diff_files.
@@ -546,16 +543,33 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD render_patch.
 
+    render_patch_impl(
+      ii_html          = ii_html
+      iv_filename      = iv_filename
+      is_diff_line     = is_diff_line
+      iv_index         = iv_index
+      iv_section_count = mv_section_count
+      it_diff_files    = mt_diff_files ).
+
+  ENDMETHOD.
+
+
+  METHOD render_patch_impl.
+
     DATA:
       lv_id      TYPE string,
-      lv_patched TYPE abap_bool.
+      lv_patched TYPE abap_bool,
+      lo_diff    TYPE REF TO zif_abapgit_diff.
 
     " In case an object is falsely detected as changed, filename is empty and there's no diff object
     IF iv_filename IS NOT INITIAL.
-      lv_patched = get_diff_object( iv_filename )->is_line_patched( iv_index ).
+      lo_diff = get_diff_object_impl(
+        it_diff_files = it_diff_files
+        iv_filename   = iv_filename ).
+      lv_patched = lo_diff->is_line_patched( iv_index ).
     ENDIF.
 
-    lv_id = |{ iv_filename }_{ mv_section_count }_{ iv_index }|.
+    lv_id = |{ iv_filename }_{ iv_section_count }_{ iv_index }|.
 
     render_patch_cell(
       ii_html        = ii_html
@@ -771,6 +785,13 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
 
   METHOD zif_abapgit_gui_hotkeys~get_hotkey_actions.
+
+    rt_hotkey_actions = get_hotkey_actions_impl( ).
+
+  ENDMETHOD.
+
+
+  METHOD get_hotkey_actions_impl.
 
     DATA ls_hotkey_action LIKE LINE OF rt_hotkey_actions.
 

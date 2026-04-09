@@ -134,6 +134,7 @@ CLASS ltd_diff_double DEFINITION FOR TESTING.
     DATA mv_set_patch_by_old_called TYPE abap_bool.
     DATA ms_set_patch_by_old_diff   TYPE zif_abapgit_definitions=>ty_diff.
     DATA mv_set_patch_by_old_flag   TYPE abap_bool.
+    DATA mv_is_line_patched         TYPE abap_bool.
 ENDCLASS.
 
 CLASS ltd_diff_double IMPLEMENTATION.
@@ -157,6 +158,7 @@ CLASS ltd_diff_double IMPLEMENTATION.
   METHOD zif_abapgit_diff~get_beacons.
   ENDMETHOD.
   METHOD zif_abapgit_diff~is_line_patched.
+    rv_patched = mv_is_line_patched.
   ENDMETHOD.
   METHOD zif_abapgit_diff~set_patch_by_old_diff.
     mv_set_patch_by_old_called = abap_true.
@@ -313,6 +315,33 @@ CLASS ltcl_add_to_stage DEFINITION FINAL FOR TESTING
 
 ENDCLASS.
 
+CLASS ltcl_render_patch DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      empty_filename_no_diff_lookup  FOR TESTING RAISING cx_static_check,
+      patched_line_checkbox_checked  FOR TESTING RAISING cx_static_check,
+      unpatched_line_not_checked     FOR TESTING RAISING cx_static_check,
+      id_format_with_section_count   FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
+
+CLASS ltcl_get_hotkey_actions DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      returns_three_hotkeys  FOR TESTING RAISING cx_static_check,
+      stage_hotkey_is_s      FOR TESTING RAISING cx_static_check,
+      refresh_local_hotkey_r FOR TESTING RAISING cx_static_check,
+      refresh_all_hotkey_a   FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
 CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_is_patch_line_possible
                                                           ltcl_are_all_lines_patched
@@ -325,7 +354,9 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_render_patch_head
                                                           ltcl_render_diff_head
                                                           ltcl_get_staging_lstate
-                                                          ltcl_add_to_stage.
+                                                          ltcl_add_to_stage
+                                                          ltcl_render_patch
+                                                          ltcl_get_hotkey_actions.
 
 CLASS ltcl_render_patch_cell IMPLEMENTATION.
 
@@ -1615,6 +1646,218 @@ CLASS ltcl_add_to_stage IMPLEMENTATION.
     cl_abap_unit_assert=>assert_false(
       act = lo_stage->mv_rm_called
       msg = |rm should not be called for modified file| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_render_patch IMPLEMENTATION.
+
+  METHOD empty_filename_no_diff_lookup.
+
+    DATA: lo_html      TYPE REF TO ltd_html_double,
+          ls_diff_line TYPE zif_abapgit_definitions=>ty_diff,
+          lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs.
+
+    CREATE OBJECT lo_html.
+    ls_diff_line-result = zif_abapgit_definitions=>c_diff-update.
+
+    zcl_abapgit_gui_page_patch=>render_patch_impl(
+      ii_html          = lo_html
+      iv_filename      = ||
+      is_diff_line     = ls_diff_line
+      iv_index         = 1
+      iv_section_count = 0
+      it_diff_files    = lt_files ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_html->mv_checkbox_called
+      msg = |Checkbox should be rendered for empty filename| ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_html->mv_checkbox_checked
+      msg = |Should not be checked when filename is empty| ).
+
+  ENDMETHOD.
+
+  METHOD patched_line_checkbox_checked.
+
+    DATA: lo_html      TYPE REF TO ltd_html_double,
+          ls_diff_line TYPE zif_abapgit_definitions=>ty_diff,
+          lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff      TYPE REF TO ltd_diff_double.
+
+    CREATE OBJECT lo_html.
+    CREATE OBJECT lo_diff.
+    lo_diff->mv_is_line_patched = abap_true.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-o_diff   = lo_diff.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    ls_diff_line-result = zif_abapgit_definitions=>c_diff-insert.
+
+    zcl_abapgit_gui_page_patch=>render_patch_impl(
+      ii_html          = lo_html
+      iv_filename      = '_src__ztest_prog_abap'
+      is_diff_line     = ls_diff_line
+      iv_index         = 3
+      iv_section_count = 1
+      it_diff_files    = lt_files ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_html->mv_checkbox_checked
+      msg = |Checkbox should be checked when line is patched| ).
+
+  ENDMETHOD.
+
+  METHOD unpatched_line_not_checked.
+
+    DATA: lo_html      TYPE REF TO ltd_html_double,
+          ls_diff_line TYPE zif_abapgit_definitions=>ty_diff,
+          lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff      TYPE REF TO ltd_diff_double.
+
+    CREATE OBJECT lo_html.
+    CREATE OBJECT lo_diff.
+    lo_diff->mv_is_line_patched = abap_false.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-o_diff   = lo_diff.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    ls_diff_line-result = zif_abapgit_definitions=>c_diff-update.
+
+    zcl_abapgit_gui_page_patch=>render_patch_impl(
+      ii_html          = lo_html
+      iv_filename      = '_src__ztest_prog_abap'
+      is_diff_line     = ls_diff_line
+      iv_index         = 5
+      iv_section_count = 2
+      it_diff_files    = lt_files ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_html->mv_checkbox_checked
+      msg = |Should not be checked when line is not patched| ).
+
+  ENDMETHOD.
+
+  METHOD id_format_with_section_count.
+
+    DATA: lo_html      TYPE REF TO ltd_html_double,
+          ls_diff_line TYPE zif_abapgit_definitions=>ty_diff,
+          lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff      TYPE REF TO ltd_diff_double.
+
+    CREATE OBJECT lo_html.
+    CREATE OBJECT lo_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-o_diff   = lo_diff.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    ls_diff_line-result = zif_abapgit_definitions=>c_diff-insert.
+
+    zcl_abapgit_gui_page_patch=>render_patch_impl(
+      ii_html          = lo_html
+      iv_filename      = '_src__ztest_prog_abap'
+      is_diff_line     = ls_diff_line
+      iv_index         = 7
+      iv_section_count = 3
+      it_diff_files    = lt_files ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = |patch_line__src__ztest_prog_abap_3_7|
+      act = lo_html->mv_checkbox_id
+      msg = |ID should include filename, section count, and index| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_get_hotkey_actions IMPLEMENTATION.
+
+  METHOD returns_three_hotkeys.
+
+    DATA lt_actions TYPE zif_abapgit_gui_hotkeys=>ty_hotkeys_with_descr.
+
+    lt_actions = zcl_abapgit_gui_page_patch=>get_hotkey_actions_impl( ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = 3
+      act = lines( lt_actions )
+      msg = |Should return exactly 3 hotkey actions| ).
+
+  ENDMETHOD.
+
+  METHOD stage_hotkey_is_s.
+
+    DATA: lt_actions TYPE zif_abapgit_gui_hotkeys=>ty_hotkeys_with_descr,
+          ls_action  LIKE LINE OF lt_actions.
+
+    lt_actions = zcl_abapgit_gui_page_patch=>get_hotkey_actions_impl( ).
+
+    READ TABLE lt_actions INTO ls_action
+      WITH KEY action = 'stagePatch'.
+
+    cl_abap_unit_assert=>assert_subrc(
+      exp = 0
+      msg = |stagePatch action should exist| ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = |s|
+      act = ls_action-hotkey
+      msg = |stagePatch hotkey should be s| ).
+
+  ENDMETHOD.
+
+  METHOD refresh_local_hotkey_r.
+
+    DATA: lt_actions TYPE zif_abapgit_gui_hotkeys=>ty_hotkeys_with_descr,
+          ls_action  LIKE LINE OF lt_actions.
+
+    lt_actions = zcl_abapgit_gui_page_patch=>get_hotkey_actions_impl( ).
+
+    READ TABLE lt_actions INTO ls_action
+      WITH KEY action = 'refreshLocal'.
+
+    cl_abap_unit_assert=>assert_subrc(
+      exp = 0
+      msg = |refreshLocal action should exist| ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = |r|
+      act = ls_action-hotkey
+      msg = |refreshLocal hotkey should be r| ).
+
+  ENDMETHOD.
+
+  METHOD refresh_all_hotkey_a.
+
+    DATA: lt_actions TYPE zif_abapgit_gui_hotkeys=>ty_hotkeys_with_descr,
+          ls_action  LIKE LINE OF lt_actions.
+
+    lt_actions = zcl_abapgit_gui_page_patch=>get_hotkey_actions_impl( ).
+
+    READ TABLE lt_actions INTO ls_action
+      WITH KEY action = 'refreshAll'.
+
+    cl_abap_unit_assert=>assert_subrc(
+      exp = 0
+      msg = |refreshAll action should exist| ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = |a|
+      act = ls_action-hotkey
+      msg = |refreshAll hotkey should be a| ).
 
   ENDMETHOD.
 
