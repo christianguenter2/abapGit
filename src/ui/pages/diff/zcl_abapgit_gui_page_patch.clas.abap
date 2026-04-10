@@ -144,6 +144,13 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
     CLASS-METHODS get_hotkey_actions_impl
       RETURNING
         VALUE(rt_hotkey_actions) TYPE zif_abapgit_gui_hotkeys=>ty_hotkeys_with_descr .
+    CLASS-METHODS apply_form_flds_impl
+      IMPORTING
+        !it_diff_files TYPE zif_abapgit_gui_diff=>ty_file_diffs
+        !iv_add        TYPE string
+        !iv_remove     TYPE string
+      RAISING
+        zcx_abapgit_exception .
     DATA mo_stage TYPE REF TO zcl_abapgit_stage .
     DATA mv_section_count TYPE i .
     DATA mv_pushed TYPE abap_bool .
@@ -174,12 +181,6 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
       RAISING
         zcx_abapgit_exception .
     METHODS add_to_stage
-      RAISING
-        zcx_abapgit_exception .
-    METHODS apply_patch_all
-      IMPORTING
-        !iv_patch      TYPE string
-        !iv_patch_flag TYPE abap_bool
       RAISING
         zcx_abapgit_exception .
     CLASS-METHODS is_patch_line_possible
@@ -304,16 +305,6 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD apply_patch_all.
-
-    apply_patch_all_impl(
-      it_diff_files = mt_diff_files
-      iv_patch      = iv_patch
-      iv_patch_flag = iv_patch_flag ).
-
-  ENDMETHOD.
-
-
   METHOD apply_patch_all_impl.
 
     DATA: lv_filename   TYPE string,
@@ -385,11 +376,25 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
     lv_add    = ii_event->form_data( )->get( c_patch_action-add ).
     lv_remove = ii_event->form_data( )->get( c_patch_action-remove ).
 
-    apply_patch_all( iv_patch      = lv_add
-                     iv_patch_flag = abap_true ).
+    apply_form_flds_impl(
+      it_diff_files = mt_diff_files
+      iv_add        = lv_add
+      iv_remove     = lv_remove ).
 
-    apply_patch_all( iv_patch      = lv_remove
-                     iv_patch_flag = abap_false ).
+  ENDMETHOD.
+
+
+  METHOD apply_form_flds_impl.
+
+    apply_patch_all_impl(
+      it_diff_files = it_diff_files
+      iv_patch      = iv_add
+      iv_patch_flag = abap_true ).
+
+    apply_patch_all_impl(
+      it_diff_files = it_diff_files
+      iv_patch      = iv_remove
+      iv_patch_flag = abap_false ).
 
   ENDMETHOD.
 

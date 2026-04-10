@@ -342,6 +342,19 @@ CLASS ltcl_get_hotkey_actions DEFINITION FINAL FOR TESTING
 
 ENDCLASS.
 
+CLASS ltcl_apply_patch_form_flds DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      add_sets_patch_flag_true   FOR TESTING RAISING cx_static_check,
+      remove_sets_patch_flag_off FOR TESTING RAISING cx_static_check,
+      both_add_and_remove        FOR TESTING RAISING cx_static_check,
+      empty_strings_no_calls     FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
 CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_is_patch_line_possible
                                                           ltcl_are_all_lines_patched
@@ -356,7 +369,8 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_get_staging_lstate
                                                           ltcl_add_to_stage
                                                           ltcl_render_patch
-                                                          ltcl_get_hotkey_actions.
+                                                          ltcl_get_hotkey_actions
+                                                          ltcl_apply_patch_form_flds.
 
 CLASS ltcl_render_patch_cell IMPLEMENTATION.
 
@@ -1858,6 +1872,143 @@ CLASS ltcl_get_hotkey_actions IMPLEMENTATION.
       exp = |a|
       act = ls_action-hotkey
       msg = |refreshAll hotkey should be a| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_apply_patch_form_flds IMPLEMENTATION.
+
+  METHOD add_sets_patch_flag_true.
+
+    DATA: lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff      TYPE REF TO ltd_diff_double,
+          ls_diff      TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff.
+    ls_diff-result  = zif_abapgit_definitions=>c_diff-update.
+    ls_diff-new_num = 10.
+    INSERT ls_diff INTO TABLE lo_diff->mt_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-o_diff   = lo_diff.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    zcl_abapgit_gui_page_patch=>apply_form_flds_impl(
+      it_diff_files = lt_files
+      iv_add        = |patch_line__src__ztest_prog_abap_0_1|
+      iv_remove     = || ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_diff->mv_set_patch_new_called
+      msg = |Add patch should call set_patch_new| ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_diff->mv_set_patch_new_flag
+      msg = |Add patch should set flag to true| ).
+
+  ENDMETHOD.
+
+  METHOD remove_sets_patch_flag_off.
+
+    DATA: lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff      TYPE REF TO ltd_diff_double,
+          ls_diff      TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff.
+    ls_diff-result  = zif_abapgit_definitions=>c_diff-update.
+    ls_diff-new_num = 10.
+    INSERT ls_diff INTO TABLE lo_diff->mt_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-o_diff   = lo_diff.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    zcl_abapgit_gui_page_patch=>apply_form_flds_impl(
+      it_diff_files = lt_files
+      iv_add        = ||
+      iv_remove     = |patch_line__src__ztest_prog_abap_0_1| ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_diff->mv_set_patch_new_called
+      msg = |Remove patch should call set_patch_new| ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_diff->mv_set_patch_new_flag
+      msg = |Remove patch should set flag to false| ).
+
+  ENDMETHOD.
+
+  METHOD both_add_and_remove.
+
+    DATA: lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff_a    TYPE REF TO ltd_diff_double,
+          lo_diff_b    TYPE REF TO ltd_diff_double,
+          ls_diff      TYPE zif_abapgit_definitions=>ty_diff.
+
+    CREATE OBJECT lo_diff_a.
+    CREATE OBJECT lo_diff_b.
+
+    ls_diff-result  = zif_abapgit_definitions=>c_diff-update.
+    ls_diff-new_num = 10.
+    INSERT ls_diff INTO TABLE lo_diff_a->mt_diff.
+    INSERT ls_diff INTO TABLE lo_diff_b->mt_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'zclass_a.clas.abap'.
+    ls_file_diff-o_diff   = lo_diff_a.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    ls_file_diff-filename = 'zclass_b.clas.abap'.
+    ls_file_diff-o_diff   = lo_diff_b.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    zcl_abapgit_gui_page_patch=>apply_form_flds_impl(
+      it_diff_files = lt_files
+      iv_add        = |patch_line__src__zclass_a_clas_abap_0_1|
+      iv_remove     = |patch_line__src__zclass_b_clas_abap_0_1| ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_diff_a->mv_set_patch_new_flag
+      msg = |Add list should set flag true on diff_a| ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_diff_b->mv_set_patch_new_flag
+      msg = |Remove list should set flag false on diff_b| ).
+
+  ENDMETHOD.
+
+  METHOD empty_strings_no_calls.
+
+    DATA: lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff      TYPE REF TO ltd_diff_double.
+
+    CREATE OBJECT lo_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-o_diff   = lo_diff.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    zcl_abapgit_gui_page_patch=>apply_form_flds_impl(
+      it_diff_files = lt_files
+      iv_add        = ||
+      iv_remove     = || ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_diff->mv_set_patch_new_called
+      msg = |Empty strings should not trigger any calls| ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_diff->mv_set_patch_old_called
+      msg = |Empty strings should not trigger any calls| ).
 
   ENDMETHOD.
 
