@@ -695,12 +695,10 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD get_staging_lstate.
 
-    IF iv_lstate = zif_abapgit_definitions=>c_state-deleted
-        AND are_all_lines_patched( it_diff ) = abap_true.
-      rv_lstate = zif_abapgit_definitions=>c_state-deleted.
-    ELSEIF iv_lstate = zif_abapgit_definitions=>c_state-added
-        AND are_all_lines_patched( it_diff ) = abap_true.
-      rv_lstate = zif_abapgit_definitions=>c_state-added.
+    IF are_all_lines_patched( it_diff ) = abap_true
+        AND ( iv_lstate = zif_abapgit_definitions=>c_state-deleted
+           OR iv_lstate = zif_abapgit_definitions=>c_state-added ).
+      rv_lstate = iv_lstate.
     ELSE.
       rv_lstate = zif_abapgit_definitions=>c_state-modified.
     ENDIF.
