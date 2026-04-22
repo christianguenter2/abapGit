@@ -115,6 +115,15 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
       IMPORTING
         !ii_html TYPE REF TO zif_abapgit_html
         !is_diff TYPE zif_abapgit_gui_diff=>ty_file_diff .
+    CLASS-METHODS render_beacon_th_impl
+      IMPORTING
+        !ii_html          TYPE REF TO zif_abapgit_html
+        !is_diff          TYPE zif_abapgit_gui_diff=>ty_file_diff
+        !iv_section_count TYPE i .
+    CLASS-METHODS render_patch_th_impl
+      IMPORTING
+        !ii_html TYPE REF TO zif_abapgit_html
+        !iv_id   TYPE string .
     CLASS-METHODS render_diff_head_impl
       IMPORTING
         !ii_html TYPE REF TO zif_abapgit_html
@@ -153,7 +162,6 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION
         zcx_abapgit_exception .
     DATA mo_stage TYPE REF TO zcl_abapgit_stage .
     DATA mv_section_count TYPE i .
-    DATA mv_pushed TYPE abap_bool .
     DATA mi_repo_online TYPE REF TO zif_abapgit_repo_online .
     DATA mv_sci_result TYPE zif_abapgit_definitions=>ty_sci_result .
 
@@ -401,20 +409,13 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD are_all_lines_patched.
 
-    DATA: lv_patch_count TYPE i.
-
-    FIELD-SYMBOLS: <ls_diff> TYPE zif_abapgit_definitions=>ty_diff.
-
     IF it_diff IS INITIAL.
       RETURN.
     ENDIF.
 
-    LOOP AT it_diff ASSIGNING <ls_diff>
-                    WHERE patch_flag = abap_true.
-      lv_patch_count = lv_patch_count + 1.
-    ENDLOOP.
-
-    rv_are_all_lines_patched = boolc( lv_patch_count = lines( it_diff ) ).
+    READ TABLE it_diff TRANSPORTING NO FIELDS
+                       WITH KEY patch_flag = abap_false.
+    rv_are_all_lines_patched = boolc( sy-subrc <> 0 ).
 
   ENDMETHOD.
 
@@ -524,11 +525,10 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD is_patch_line_possible.
 
-    IF is_diff_line-result = zif_abapgit_definitions=>c_diff-update
-    OR is_diff_line-result = zif_abapgit_definitions=>c_diff-insert
-    OR is_diff_line-result = zif_abapgit_definitions=>c_diff-delete.
-      rv_is_patch_line_possible = abap_true.
-    ENDIF.
+    rv_is_patch_line_possible = boolc(
+      is_diff_line-result = zif_abapgit_definitions=>c_diff-update OR
+      is_diff_line-result = zif_abapgit_definitions=>c_diff-insert OR
+      is_diff_line-result = zif_abapgit_definitions=>c_diff-delete ).
 
   ENDMETHOD.
 
@@ -600,8 +600,26 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
   METHOD render_patch_head.
 
+    render_patch_th_impl(
+      ii_html = ii_html
+      iv_id   = |patch_file_{ get_normalized_fname_with_path( is_diff ) }| ).
+
+  ENDMETHOD.
+
+
+  METHOD render_beacon_th_impl.
+
+    render_patch_th_impl(
+      ii_html = ii_html
+      iv_id   = |patch_section_{ get_normalized_fname_with_path( is_diff ) }_{ iv_section_count }| ).
+
+  ENDMETHOD.
+
+
+  METHOD render_patch_th_impl.
+
     ii_html->add( |<th class="patch">| ).
-    ii_html->add_checkbox( |patch_file_{ get_normalized_fname_with_path( is_diff ) }| ).
+    ii_html->add_checkbox( iv_id ).
     ii_html->add( '</th>' ).
 
   ENDMETHOD.
@@ -686,9 +704,10 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
 
     mv_section_count = mv_section_count + 1.
 
-    ii_html->add( |<th class="patch">| ).
-    ii_html->add_checkbox( |patch_section_{ get_normalized_fname_with_path( is_diff ) }_{ mv_section_count }| ).
-    ii_html->add( '</th>' ).
+    render_beacon_th_impl(
+      ii_html          = ii_html
+      is_diff          = is_diff
+      iv_section_count = mv_section_count ).
 
   ENDMETHOD.
 
@@ -823,12 +842,6 @@ CLASS zcl_abapgit_gui_page_patch IMPLEMENTATION.
     register_handlers( ).
 
     CLEAR mv_section_count.
-
-    IF mv_pushed = abap_true.
-      refresh_full( ).
-      calculate_diff( ).
-      CLEAR mv_pushed.
-    ENDIF.
 
     ri_html = super->zif_abapgit_gui_renderable~render( ).
 

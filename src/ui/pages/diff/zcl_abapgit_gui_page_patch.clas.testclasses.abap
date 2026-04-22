@@ -300,6 +300,18 @@ CLASS ltcl_render_diff_head DEFINITION FINAL FOR TESTING
 ENDCLASS.
 
 
+CLASS ltcl_render_beacon_th DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      checkbox_has_section_prefix    FOR TESTING RAISING cx_static_check,
+      checkbox_has_section_count FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
+
 CLASS ltcl_add_to_stage DEFINITION FINAL FOR TESTING
   DURATION SHORT
   RISK LEVEL HARMLESS.
@@ -366,6 +378,7 @@ CLASS zcl_abapgit_gui_page_patch DEFINITION LOCAL FRIENDS ltcl_get_patch_data
                                                           ltcl_apply_patch_all_impl
                                                           ltcl_render_patch_head
                                                           ltcl_render_diff_head
+                                                          ltcl_render_beacon_th
                                                           ltcl_get_staging_lstate
                                                           ltcl_add_to_stage
                                                           ltcl_render_patch
@@ -1465,6 +1478,56 @@ CLASS ltcl_render_diff_head IMPLEMENTATION.
     cl_abap_unit_assert=>assert_true(
       act = lo_html->mv_add_a_called
       msg = |Link should be rendered when obj_type and obj_name are set| ).
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltcl_render_beacon_th IMPLEMENTATION.
+
+  METHOD checkbox_has_section_prefix.
+
+    DATA: lo_html TYPE REF TO ltd_html_double,
+          ls_diff TYPE zif_abapgit_gui_diff=>ty_file_diff.
+
+    CREATE OBJECT lo_html.
+    ls_diff-path     = '/src/'.
+    ls_diff-filename = 'ztest.prog.abap'.
+
+    zcl_abapgit_gui_page_patch=>render_beacon_th_impl(
+      ii_html          = lo_html
+      is_diff          = ls_diff
+      iv_section_count = 2 ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = lo_html->mv_checkbox_called
+      msg = |Checkbox should be rendered| ).
+
+    cl_abap_unit_assert=>assert_true(
+      act = boolc( lo_html->mv_checkbox_id CP 'patch_section_*' )
+      msg = |Checkbox ID should start with patch_section_| ).
+
+  ENDMETHOD.
+
+  METHOD checkbox_has_section_count.
+
+    DATA: lo_html TYPE REF TO ltd_html_double,
+          ls_diff TYPE zif_abapgit_gui_diff=>ty_file_diff.
+
+    CREATE OBJECT lo_html.
+    ls_diff-path     = '/src/'.
+    ls_diff-filename = 'ztest.prog.abap'.
+
+    zcl_abapgit_gui_page_patch=>render_beacon_th_impl(
+      ii_html          = lo_html
+      is_diff          = ls_diff
+      iv_section_count = 7 ).
+
+    cl_abap_unit_assert=>assert_equals(
+      exp = |patch_section__src__ztest_prog_abap_7|
+      act = lo_html->mv_checkbox_id
+      msg = |Checkbox ID should use normalized path, filename and section count| ).
 
   ENDMETHOD.
 
