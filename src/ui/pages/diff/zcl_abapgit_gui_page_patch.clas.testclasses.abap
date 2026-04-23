@@ -256,7 +256,8 @@ CLASS ltcl_apply_patch_all_impl DEFINITION FINAL FOR TESTING
       single_entry_add FOR TESTING RAISING cx_static_check,
       single_entry_remove FOR TESTING RAISING cx_static_check,
       multiple_entries FOR TESTING RAISING cx_static_check,
-      empty_patch_skipped FOR TESTING RAISING cx_static_check.
+      empty_patch_skipped FOR TESTING RAISING cx_static_check,
+      unknown_filename_raises FOR TESTING RAISING cx_static_check.
 
 ENDCLASS.
 
@@ -336,7 +337,8 @@ CLASS ltcl_render_patch DEFINITION FINAL FOR TESTING
       empty_filename_no_diff_lookup  FOR TESTING RAISING cx_static_check,
       patched_line_checkbox_checked  FOR TESTING RAISING cx_static_check,
       unpatched_line_not_checked     FOR TESTING RAISING cx_static_check,
-      id_format_with_section_count   FOR TESTING RAISING cx_static_check.
+      id_format_with_section_count   FOR TESTING RAISING cx_static_check,
+      unchanged_line_no_checkbox     FOR TESTING RAISING cx_static_check.
 
 ENDCLASS.
 
@@ -1283,6 +1285,25 @@ CLASS ltcl_apply_patch_all_impl IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD unknown_filename_raises.
+
+    DATA: lt_files TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          lx_error TYPE REF TO zcx_abapgit_exception.
+
+    TRY.
+        zcl_abapgit_gui_page_patch=>apply_patch_all_impl(
+          it_diff_files = lt_files
+          iv_patch      = |patch_line_unknownfile_0_1|
+          iv_patch_flag = abap_true ).
+        cl_abap_unit_assert=>fail( |Expected zcx_abapgit_exception for unknown filename| ).
+      CATCH zcx_abapgit_exception INTO lx_error.
+        cl_abap_unit_assert=>assert_char_cp(
+          act = lx_error->get_text( )
+          exp = |Invalid filename*| ).
+    ENDTRY.
+
+  ENDMETHOD.
+
 ENDCLASS.
 
 
@@ -1854,6 +1875,38 @@ CLASS ltcl_render_patch IMPLEMENTATION.
       exp = |patch_line__src__ztest_prog_abap_3_7|
       act = lo_html->mv_checkbox_id
       msg = |ID should include filename, section count, and index| ).
+
+  ENDMETHOD.
+
+  METHOD unchanged_line_no_checkbox.
+
+    DATA: lo_html      TYPE REF TO ltd_html_double,
+          ls_diff_line TYPE zif_abapgit_definitions=>ty_diff,
+          lt_files     TYPE zif_abapgit_gui_diff=>ty_file_diffs,
+          ls_file_diff TYPE zif_abapgit_gui_diff=>ty_file_diff,
+          lo_diff      TYPE REF TO ltd_diff_double.
+
+    CREATE OBJECT lo_html.
+    CREATE OBJECT lo_diff.
+
+    ls_file_diff-path     = '/src/'.
+    ls_file_diff-filename = 'ztest.prog.abap'.
+    ls_file_diff-o_diff   = lo_diff.
+    INSERT ls_file_diff INTO TABLE lt_files.
+
+    ls_diff_line-result = zif_abapgit_definitions=>c_diff-unchanged.
+
+    zcl_abapgit_gui_page_patch=>render_patch_impl(
+      ii_html          = lo_html
+      iv_filename      = '_src__ztest_prog_abap'
+      is_diff_line     = ls_diff_line
+      iv_index         = 1
+      iv_section_count = 0
+      it_diff_files    = lt_files ).
+
+    cl_abap_unit_assert=>assert_false(
+      act = lo_html->mv_checkbox_called
+      msg = |No checkbox should be rendered for unchanged diff lines| ).
 
   ENDMETHOD.
 
