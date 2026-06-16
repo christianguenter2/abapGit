@@ -500,6 +500,7 @@ function StageHelper(params) {
     commitBtn   : document.getElementById(params.ids.commitBtn),
     patchBtn    : document.getElementById(params.ids.patchBtn),
     objectSearch: document.getElementById(params.ids.objectSearch),
+    clearBtn    : document.getElementById(params.ids.clearBtn),
   };
 
   // Server-rendered "Add All and Commit (n)" / "Patch All (n)" labels
@@ -664,12 +665,31 @@ StageHelper.prototype.onFilter = function(e) {
     this.applyFilterValue(e.target.value);
     submitSapeventForm({ filterValue: e.target.value }, "stage_filter", "post");
   }
+  this.toggleClearButton();
 };
 
 StageHelper.prototype.applyFilterValue = function(sFilterValue) {
   this.lastFilterValue = sFilterValue;
   this.filteredCount   = this.iterateStageTab(true, this.applyFilterToRow, sFilterValue);
   this.updateMenu();
+};
+
+// Show the clear button only when the filter has a value
+StageHelper.prototype.toggleClearButton = function() {
+  if (this.dom.clearBtn) {
+    this.dom.clearBtn.style.display = this.dom.objectSearch.value ? "" : "none";
+  }
+};
+
+// Clear the filter input and show all rows again
+StageHelper.prototype.clearFilter = function() {
+  if (this.dom.objectSearch.value) {
+    this.dom.objectSearch.value = "";
+    this.applyFilterValue("");
+    submitSapeventForm({ filterValue: "" }, "stage_filter", "post");
+    this.toggleClearButton();
+  }
+  this.dom.objectSearch.focus();
 };
 
 // Get plain text of a cell, ignoring injected link-hint spans.

@@ -350,22 +350,72 @@ CLASS zcl_abapgit_gui_page_stage IMPLEMENTATION.
 
   METHOD render_actions.
 
+    DATA lo_toolbar        TYPE REF TO zcl_abapgit_html_toolbar.
+    DATA lv_local_count    TYPE i.
+    DATA lv_commit_all_txt TYPE string.
+    DATA lv_patch_all_txt  TYPE string.
+
     CREATE OBJECT ri_html TYPE zcl_abapgit_html.
 
-    " Commit and Patch actions live in the page toolbar (commitBtn / patchBtn,
-    " labels managed by StageHelper.updateMenu)
+    ri_html->add( '<div class="stage-filter-bar margin-v5">' ).
 
-    ri_html->add( '<table class="w100 margin-v5"><tr>' ).
+    " Action buttons, right-aligned on the same row as the filter.
+    " Commit/Patch are onclick buttons (ids commitBtn/patchBtn) whose labels
+    " are managed by StageHelper.updateMenu.
+    IF lines( ms_files-local ) > 0 OR lines( ms_files-remote ) > 0.
+      lo_toolbar = zcl_abapgit_html_toolbar=>create( 'stage-commands' ).
 
-    " Filter bar
-    ri_html->add( '<td class="right">' ).
+      lv_local_count   = count_default_files_to_commit( ).
+      lv_patch_all_txt = |Patch|.
+      IF lv_local_count > 0.
+        lv_commit_all_txt = |Add All and Commit ({ lv_local_count })|.
+        lv_patch_all_txt  = |Patch All ({ lv_local_count })|.
+        " Otherwise commit is empty, but the element (id) is preserved for JS
+      ENDIF.
+
+      lo_toolbar->add(
+        iv_txt = lv_commit_all_txt
+        iv_typ = zif_abapgit_html=>c_action_type-onclick
+        iv_id  = |commitBtn|
+        iv_opt = zif_abapgit_html=>c_html_opt-strong
+      )->add(
+        iv_txt = ``
+        iv_typ = zif_abapgit_html=>c_action_type-separator
+      )->add(
+        iv_txt = lv_patch_all_txt
+        iv_typ = zif_abapgit_html=>c_action_type-onclick
+        iv_id  = |patchBtn|
+        iv_opt = zif_abapgit_html=>c_html_opt-strong
+      )->add(
+        iv_txt = ``
+        iv_typ = zif_abapgit_html=>c_action_type-separator
+      )->add(
+        iv_txt = |Diff|
+        iv_act = |{ zif_abapgit_definitions=>c_action-go_repo_diff }?key={ mi_repo->get_key( ) }|
+      )->add(
+        iv_txt = 'Refresh'
+        iv_act = |{ c_action-stage_refresh }| ).
+
+      ri_html->add( lo_toolbar->render( iv_right = abap_true ) ).
+    ENDIF.
+
+    " Filter bar (left-aligned, similar to the repo overview page)
+    ri_html->add( '<label for="objectSearch">Filter:</label> ' ).
     ri_html->add( '<input class="stage-filter" id="objectSearch"' &&
                   ' type="search" placeholder="Filter Objects"' &&
                   | value="{ mv_filter_value }">| ).
-    ri_html->add( '</td>' ).
+    ri_html->add( |<span id="stage-clear-filter" class="toolbar-light pad-sides"| &&
+                  COND string( WHEN mv_filter_value IS INITIAL THEN ` style="display:none"` ELSE `` ) && |>| ).
+    ri_html->add( ri_html->a(
+      iv_txt   = |<i id="icon-clear-filter" class="icon icon-times-solid"></i>|
+      iv_title = |Clear filter|
+      iv_class = 'command'
+      iv_act   = |gHelper.clearFilter()|
+      iv_typ   = zif_abapgit_html=>c_action_type-onclick ) ).
+    ri_html->add( '</span>' ).
 
-    ri_html->add( '</tr>' ).
-    ri_html->add( '</table>' ).
+    ri_html->add( '<div style="clear:both;"></div>' ).
+    ri_html->add( '</div>' ).
 
   ENDMETHOD.
 
@@ -602,6 +652,7 @@ CLASS zcl_abapgit_gui_page_stage IMPLEMENTATION.
     ri_html->add( '    commitBtn:         "commitBtn",' ).
     ri_html->add( '    patchBtn:          "patchBtn",' ).
     ri_html->add( '    objectSearch:      "objectSearch",' ).
+    ri_html->add( '    clearBtn:          "stage-clear-filter",' ).
     ri_html->add( '  }' ).
 
     ri_html->add( '}' ).
@@ -756,47 +807,13 @@ CLASS zcl_abapgit_gui_page_stage IMPLEMENTATION.
 
   METHOD zif_abapgit_gui_menu_provider~get_menu.
 
-    DATA: lv_local_count    TYPE i,
-          lv_commit_all_txt TYPE string,
-          lv_patch_all_txt  TYPE string.
-
+    " Commit/Patch/Diff/Refresh live on the filter row (see render_actions);
+    " the page menu only keeps Back.
     ro_toolbar = zcl_abapgit_html_toolbar=>create( 'toolbar-staging' ).
 
-    IF lines( ms_files-local ) > 0 OR lines( ms_files-remote ) > 0.
-      lv_local_count = count_default_files_to_commit( ).
-      lv_patch_all_txt = |Patch|.
-      IF lv_local_count > 0.
-        lv_commit_all_txt = |Add All and Commit ({ lv_local_count })|.
-        lv_patch_all_txt  = |Patch All ({ lv_local_count })|.
-        " Otherwise commit is empty, but the element (id) is preserved for JS
-      ENDIF.
-
-      ro_toolbar->add(
-        iv_txt = lv_commit_all_txt
-        iv_typ = zif_abapgit_html=>c_action_type-onclick
-        iv_id  = |commitBtn|
-        iv_opt = zif_abapgit_html=>c_html_opt-strong
-      )->add(
-        iv_txt = ``
-        iv_typ = zif_abapgit_html=>c_action_type-separator
-      )->add(
-        iv_txt = lv_patch_all_txt
-        iv_typ = zif_abapgit_html=>c_action_type-onclick
-        iv_id  = |patchBtn|
-        iv_opt = zif_abapgit_html=>c_html_opt-strong
-      )->add(
-        iv_txt = ``
-        iv_typ = zif_abapgit_html=>c_action_type-separator
-      )->add(
-        iv_txt = |Diff|
-        iv_act = |{ zif_abapgit_definitions=>c_action-go_repo_diff }?key={ mi_repo->get_key( ) }|
-      )->add(
-        iv_txt = 'Refresh'
-        iv_act = |{ c_action-stage_refresh }|
-      )->add(
-        iv_txt = |Back|
-        iv_act = zif_abapgit_definitions=>c_action-go_back ).
-    ENDIF.
+    ro_toolbar->add(
+      iv_txt = |Back|
+      iv_act = zif_abapgit_definitions=>c_action-go_back ).
 
   ENDMETHOD.
 
