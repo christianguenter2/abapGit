@@ -97,6 +97,12 @@ if (window.NodeList && !NodeList.prototype.forEach) {
  * Common functions
  **********************************************************/
 
+// Escape regex metacharacters, so user input can be embedded into a pattern
+// without changing its meaning (or throwing a SyntaxError)
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 // Output text to the debug div
 function debugOutput(text, dstID) {
   var stdout    = document.getElementById(dstID || "debug-output");
@@ -108,11 +114,34 @@ function debugOutput(text, dstID) {
   stdout.appendChild(paragraph);
 }
 
-// Set to true right before we navigate via a sapevent (form submit or a
+// Armed right before we navigate via a sapevent (form submit or a
 // programmatic Back-element click), so the browser-back trap
 // (redirectBrowserBackToSapEvent) can tell a self-initiated navigation from a
 // genuine user Back press. See that function for details.
-var gSapeventNavPending = false;
+var gSapeventNavPending   = false;
+var gSapeventNavPendingAt = 0;
+
+// The control emits the popstate while it handles the navigation, i.e. within
+// a moment of the submit. Actions that do not navigate away (e.g. clipboard
+// yank) never produce one at all, so an armed flag has to expire - otherwise it
+// would survive and swallow the user's next genuine Back press.
+var gSapeventNavGraceMs = 2000;
+
+function armSapeventNav() {
+  gSapeventNavPending   = true;
+  gSapeventNavPendingAt = new Date().getTime();
+}
+
+// Whether the popstate we are handling was caused by our own sapevent
+// navigation. Consumes the flag: the navigation it stands for is now accounted
+// for, so a subsequent Back press counts as a genuine one again.
+function consumeSapeventNavPending() {
+  var isPending = gSapeventNavPending
+    && (new Date().getTime() - gSapeventNavPendingAt) < gSapeventNavGraceMs;
+
+  gSapeventNavPending = false;
+  return isPending;
+}
 
 // Encode a sapevent action for the ITS "PARAMS=" slot. PARAMS carries the whole
 // action including its own query string, so characters that would terminate the
@@ -223,7 +252,7 @@ function submitSapeventForm(params, action, method, form) {
 
   // Mark that the popstate the browser control may emit while handling this
   // sapevent navigation is self-initiated, not a user Back press
-  gSapeventNavPending = true;
+  armSapeventNav();
   form.submit();
 }
 
@@ -237,7 +266,7 @@ function submitSapeventForm(params, action, method, form) {
 function clickSapEvent(element) {
   var isSapEvent = element.getAttribute("data-sapevent")
     || /sapevent/i.test(element.hrefsav || element.href || element.getAttribute("formaction") || "");
-  if (isSapEvent) gSapeventNavPending = true;
+  if (isSapEvent) armSapeventNav();
   element.click();
 }
 
@@ -795,8 +824,10 @@ StageHelper.prototype.applyFilterToRow = function(row, filter) {
   // Apply filter to cells, mark filtered text
   for (var i = targets.length - 1; i >= 0; i--) {
     var target = targets[i];
-    // Ignore case of filter
-    var regFilter = new RegExp("(" + filter + ")", "gi");
+    // Ignore case of filter. The filter is user input, so escape it: it is a
+    // literal substring to look for, not a pattern - and an unescaped "(" or
+    // "\" would throw and abort the iteration (leaving the table hidden)
+    var regFilter = new RegExp("(" + escapeRegExp(filter) + ")", "gi");
 
     target.newHtml = (filter)
       ? target.plainText.replace(regFilter, "<mark>$1</mark>")
@@ -951,19 +982,23 @@ StageHelper.prototype.iterateStageTab = function(changeMode, cb /*, ...*/) {
     this.dom.stageTab.style.display = "none";
   }
 
-  for (var b = 0, bN = table.tBodies.length; b < bN; b++) {
-    var tbody = table.tBodies[b];
-    for (var r = 0, rN = tbody.rows.length; r < rN; r++) {
-      var args   = [tbody.rows[r]].concat(restArgs);
-      var retVal = cb.apply(this, args); // callback
+  try {
+    for (var b = 0, bN = table.tBodies.length; b < bN; b++) {
+      var tbody = table.tBodies[b];
+      for (var r = 0, rN = tbody.rows.length; r < rN; r++) {
+        var args   = [tbody.rows[r]].concat(restArgs);
+        var retVal = cb.apply(this, args); // callback
 
-      if (typeof retVal === "number") retTotal += retVal;
+        if (typeof retVal === "number") retTotal += retVal;
+      }
     }
-  }
-
-  if (changeMode) {
-    this.dom.stageTab.style.display = "";
-    window.scrollTo(0, scrollOffset);
+  } finally {
+    // Also on a throwing callback - otherwise the table would stay hidden
+    // until the user reloads the page
+    if (changeMode) {
+      this.dom.stageTab.style.display = "";
+      window.scrollTo(0, scrollOffset);
+    }
   }
 
   return retTotal;
@@ -1593,7 +1628,10 @@ LinkHints.prototype.handleKey = function(event) {
     return;
   }
 
-  if (event.key === "y") {
+  // "y" arms yank mode for the next hint activation. Only outside input fields
+  // - typing a "y" into e.g. the commit message would otherwise silently arm it
+  // - and only while no hints are displayed, where keys are hint code input.
+  if (event.key === "y" && !this.areHintsDisplayed && Hotkeys.isHotkeyCallPossible()) {
     this.yankModeActive = !this.yankModeActive;
   }
 
@@ -2174,11 +2212,14 @@ function CommandPalette(commandEnumerator, opts) {
   this.hookEvents();
   Hotkeys.addHotkeyToHelpSheet(opts.toggleKey, opts.hotkeyDescription);
 
-  if (!CommandPalette.instances) {
-    CommandPalette.instances = [];
-  }
   CommandPalette.instances.push(this);
 }
+
+// Registry of successfully constructed palettes. Initialized here rather than
+// in the constructor: that returns early when the enumerator yields no commands
+// (e.g. enumerateJumpAllFiles on a page without a jump list), and isVisible() is
+// called from pages that may end up with no palette at all.
+CommandPalette.instances = [];
 
 CommandPalette.prototype.hookEvents = function() {
   document.addEventListener("keydown", this.handleToggleKey.bind(this));
@@ -2596,8 +2637,8 @@ function displayBrowserControlFooter() {
 // popstate does not only fire on user Back presses: the browser control emits
 // it while handling a sapevent navigation too (it cancels/re-renders the
 // navigation, which traverses our injected sentinel entry). Those self-initiated
-// navigations set gSapeventNavPending (in submitSapeventForm, and in
-// triggerSapEventBack before the Back-element click), so we can skip them and
+// navigations call armSapeventNav (in submitSapeventForm, in clickSapEvent, and
+// in triggerSapEventBack before the Back-element click), so we can skip them and
 // only trigger go_back for a genuine Back press.
 function redirectBrowserBackToSapEvent(backAction) {
   backAction = backAction || "go_back";
@@ -2611,8 +2652,7 @@ function redirectBrowserBackToSapEvent(backAction) {
     window.history.pushState({ abapGitBackTrap: true }, "");
 
     // Ignore popstate caused by our own sapevent navigation (consume the flag)
-    if (gSapeventNavPending) {
-      gSapeventNavPending = false;
+    if (consumeSapeventNavPending()) {
       return;
     }
 
@@ -2666,7 +2706,7 @@ function findSapEventElement(action) {
 }
 
 function triggerSapEventBack(backAction) {
-  gSapeventNavPending = true; // self-initiated; ignore the popstate this causes
+  armSapeventNav(); // self-initiated; ignore the popstate this causes
 
   // If the page renders a Back element, click it so the control's own handler
   // runs - as if the user clicked Back in the UI (works on WebGUI and desktop).
