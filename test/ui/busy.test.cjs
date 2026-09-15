@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const loadUi = require('./load-ui.cjs');
 
-function page({ webgui = true, busy = false, supported = true } = {}) {
+function page({ webgui = true, busy = false, supported = true, legacy = false } = {}) {
   const events = new Map();
   const hooks = new Map();
   const document = {
@@ -29,7 +29,14 @@ function page({ webgui = true, busy = false, supported = true } = {}) {
     detachEvent(name) { hooks.delete(name); },
     bLocked() { return busy; }
   };
-  const context = loadUi({ document, parent: { sap: { g4h: { $: supported ? { LS: { oGetInternal() { return shell; } } } : {} } } },
+  // SAP removes g4h.$ before rendering the HTML viewer.
+  const parent = { sap: { g4h: {}, its: {} }, UCF_System: {} };
+  const facade = { oGetInternal(system) { assert.equal(system, parent.UCF_System); return shell; } };
+  if (supported) {
+    if (legacy) parent.mysap = { LS: facade };
+    else parent.sap.its.LS = facade;
+  }
+  const context = loadUi({ document, parent,
     addEventListener(name, handler) { events.set(name, handler); },
     removeEventListener(name) { events.delete(name); }
   });
@@ -97,3 +104,15 @@ test('cross-origin parent does not break initialization', () => {
   Object.defineProperty(p.context, 'parent', { get() { throw Error('cross origin'); } });
   assert.doesNotThrow(() => p.context.initializeWebGuiBusyLock());
 });
+
+for (const legacy of [false, true]) {
+  test(`initializes after the bootstrap object is deleted (legacy alias: ${legacy})`, () => {
+    const p = page({ legacy });
+    assert.equal(p.context.parent.sap.g4h.$, undefined);
+    assert.ok(p.overlay);
+    p.hooks.get('lock')();
+    assert.equal(p.overlay.hidden, false);
+    p.hooks.get('unlock')();
+    assert.equal(p.overlay.hidden, true);
+  });
+}

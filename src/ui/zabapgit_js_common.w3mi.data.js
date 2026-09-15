@@ -415,7 +415,9 @@ function initializeWebGuiBusyLock() {
   var shell;
   try {
     var sap = window.parent.sap;
-    shell = sap && sap.g4h && sap.g4h.$ && sap.g4h.$.LS;
+    // WebGUI deletes sap.g4h.$ after bootstrapping. These aliases survive.
+    shell = sap && sap.its && sap.its.LS;
+    if (!shell) shell = window.parent.mysap && window.parent.mysap.LS;
     // LS exposes a facade; event subscriptions belong to its internal provider.
     if (shell && typeof shell.oGetInternal === "function") shell = shell.oGetInternal(window.parent.UCF_System);
   } catch (error) { // eslint-disable-line no-unused-vars
