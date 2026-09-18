@@ -688,6 +688,8 @@ CLASS zcl_abapgit_oo_class IMPLEMENTATION.
           lo_scanner TYPE REF TO cl_oo_source_scanner_class,
           lt_methods TYPE cl_oo_source_scanner_class=>type_method_implementations,
           lt_incls   TYPE seop_methods_w_include,
+          ls_incl    TYPE seop_method_w_include,
+          lt_written TYPE SORTED TABLE OF program WITH UNIQUE KEY table_line,
           lv_method  LIKE LINE OF lt_methods,
           lt_public  TYPE seop_source_string,
           lt_source  TYPE seop_source_string.
@@ -770,6 +772,8 @@ CLASS zcl_abapgit_oo_class IMPLEMENTATION.
         iv_version = iv_version
         it_source  = lt_source ).
 
+      INSERT lv_program INTO TABLE lt_written.
+
       " If method was implemented before, remove from list
       DELETE lt_incls WHERE cpdkey-clsname = is_key-clsname AND cpdkey-cpdname = lv_method.
     ENDLOOP.
@@ -781,9 +785,15 @@ CLASS zcl_abapgit_oo_class IMPLEMENTATION.
                                it_source    = it_source
                                it_methods   = lt_methods ).
 
-    " If there are leftover method includes, then class needs to be repaired
-    " which will delete the obsolete includes
+    " Leftovers: deleted interface methods, or methods moved from interface to class.
+    " Alias resolution can reuse an include under a new method name — do not delete those.
     IF lt_incls IS NOT INITIAL.
+      LOOP AT lt_incls INTO ls_incl.
+        READ TABLE lt_written WITH TABLE KEY table_line = ls_incl-incname TRANSPORTING NO FIELDS.
+        IF sy-subrc <> 0 AND ls_incl-incname IS NOT INITIAL.
+          delete_report( ls_incl-incname ).
+        ENDIF.
+      ENDLOOP.
       repair_classpool( is_key ).
       repair_redefinitions( is_key ).
     ENDIF.
@@ -793,6 +803,7 @@ CLASS zcl_abapgit_oo_class IMPLEMENTATION.
       io_scanner = lo_scanner ).
 
   ENDMETHOD.
+
 
 
   METHOD zif_abapgit_oo_object_fnc~exists.
