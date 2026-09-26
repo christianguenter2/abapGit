@@ -3295,3 +3295,10 @@ function registerSourceViewerShortcuts() {
 }
 
 registerSourceViewerShortcuts();
+
+const f = () => {
+  let y = "";
+  console.log("This breaks IE" + y)
+};
+
+f();
