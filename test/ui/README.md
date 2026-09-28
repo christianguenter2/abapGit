@@ -49,6 +49,7 @@ Avoid expanding the fixtures into a general-purpose browser emulator.
 | [`link-hints.test.cjs`](link-hints.test.cjs) | Partial hints, cancellation/reopening, copy-mode reset, disabled controls, and checkbox activation |
 | [`key-navigation.test.cjs`](key-navigation.test.cjs) | Dropdown navigation and boundaries, link activation, modified keys, and editing controls |
 | [`diff-copy.test.cjs`](diff-copy.test.cjs) | Diff-column copying, invalid/empty selections, unrelated table clicks, and clipboard fallbacks |
+| [`element-ids.test.cjs`](element-ids.test.cjs) | Element IDs and texts the script hard-codes are still rendered by the ABAP sources |
 
 To measure the shipped JavaScript with Node's V8 coverage:
 
