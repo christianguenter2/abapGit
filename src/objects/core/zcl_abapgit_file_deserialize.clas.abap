@@ -12,6 +12,12 @@ CLASS zcl_abapgit_file_deserialize DEFINITION
         VALUE(rt_results) TYPE zif_abapgit_definitions=>ty_results_tt
       RAISING
         zcx_abapgit_exception .
+    CLASS-METHODS prioritize_deser
+      IMPORTING
+        !ii_log           TYPE REF TO zif_abapgit_log
+        !it_results       TYPE zif_abapgit_definitions=>ty_results_tt
+      RETURNING
+        VALUE(rt_results) TYPE zif_abapgit_definitions=>ty_results_tt .
   PROTECTED SECTION.
 
   PRIVATE SECTION.
@@ -20,12 +26,6 @@ CLASS zcl_abapgit_file_deserialize DEFINITION
       IMPORTING
         !it_results       TYPE zif_abapgit_definitions=>ty_results_tt
         !ii_log           TYPE REF TO zif_abapgit_log OPTIONAL
-      RETURNING
-        VALUE(rt_results) TYPE zif_abapgit_definitions=>ty_results_tt .
-    CLASS-METHODS prioritize_deser
-      IMPORTING
-        !ii_log           TYPE REF TO zif_abapgit_log
-        !it_results       TYPE zif_abapgit_definitions=>ty_results_tt
       RETURNING
         VALUE(rt_results) TYPE zif_abapgit_definitions=>ty_results_tt .
     CLASS-METHODS map_results_to_items

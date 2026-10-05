@@ -79,6 +79,17 @@ CLASS zcl_abapgit_objects DEFINITION
         VALUE(rv_active) TYPE abap_bool
       RAISING
         zcx_abapgit_exception .
+    CLASS-METHODS create_object
+      IMPORTING
+        !is_item        TYPE zif_abapgit_definitions=>ty_item
+        !io_files       TYPE REF TO zcl_abapgit_objects_files OPTIONAL
+        !io_i18n_params TYPE REF TO zcl_abapgit_i18n_params OPTIONAL
+        !is_metadata    TYPE zif_abapgit_definitions=>ty_metadata OPTIONAL
+        !iv_native_only TYPE abap_bool DEFAULT abap_false
+      RETURNING
+        VALUE(ri_obj)   TYPE REF TO zif_abapgit_object
+      RAISING
+        zcx_abapgit_type_not_supported .
   PROTECTED SECTION.
 
   PRIVATE SECTION.
@@ -171,18 +182,6 @@ CLASS zcl_abapgit_objects DEFINITION
         !it_items TYPE zif_abapgit_definitions=>ty_items_tt
       RAISING
         zcx_abapgit_exception .
-
-    CLASS-METHODS create_object
-      IMPORTING
-        !is_item        TYPE zif_abapgit_definitions=>ty_item
-        !io_files       TYPE REF TO zcl_abapgit_objects_files OPTIONAL
-        !io_i18n_params TYPE REF TO zcl_abapgit_i18n_params OPTIONAL
-        !is_metadata    TYPE zif_abapgit_definitions=>ty_metadata OPTIONAL
-        !iv_native_only TYPE abap_bool DEFAULT abap_false
-      RETURNING
-        VALUE(ri_obj)   TYPE REF TO zif_abapgit_object
-      RAISING
-        zcx_abapgit_type_not_supported .
 
     CLASS-METHODS map_tadir_to_items
       IMPORTING
