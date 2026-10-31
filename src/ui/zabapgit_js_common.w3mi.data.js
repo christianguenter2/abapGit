@@ -3526,6 +3526,7 @@ function closePopupOnEscape() {
     event.stopPropagation();
     if (event.type !== "keydown" || sent) return;
     sent = true; // key repeat must not send a second go_back
+    if (gEnv.browserControl === "Edge") setRefocusMarker();
     triggerSapEventBack("go_back");
   }
 
@@ -3533,6 +3534,70 @@ function closePopupOnEscape() {
     document.addEventListener(type, swallow, true);
   });
 }
+
+// SPIKE, Edge only: SAP GUI moves the keyboard focus out of the control on
+// Escape, and PBO set_focus does not bring it back into the page. The page after
+// the round trip tries to take it back itself, at several moments, and shows
+// what document.hasFocus() said each time.
+var REFOCUS_MARKER = "abapGitRefocusAfterEscape";
+
+function setRefocusMarker() {
+  try { window.sessionStorage.setItem(REFOCUS_MARKER, "1") } catch (e) { /* not available */ }
+  if (window.name.indexOf(REFOCUS_MARKER) === -1) window.name += REFOCUS_MARKER;
+}
+
+function takeRefocusMarker() {
+  var found = false;
+  try {
+    found = window.sessionStorage.getItem(REFOCUS_MARKER) === "1";
+    window.sessionStorage.removeItem(REFOCUS_MARKER);
+  } catch (e) { /* not available */ }
+  if (window.name.indexOf(REFOCUS_MARKER) !== -1) {
+    found = true;
+    window.name = window.name.replace(REFOCUS_MARKER, "");
+  }
+  return found;
+}
+
+function refocusAfterEscape() {
+  if (!takeRefocusMarker()) return;
+
+  var report = [];
+  var line = document.createElement("div");
+  line.style.cssText = "position:fixed;bottom:0;left:0;right:0;z-index:99999;padding:4px 8px;" +
+    "font:12px monospace;background:#ffd;color:#000;border-top:1px solid #cc0";
+  document.body.appendChild(line);
+
+  function attempt(label) {
+    var before = document.hasFocus();
+    try { window.focus() } catch (e) { /* ignore */ }
+    try {
+      if (!document.body.hasAttribute("tabindex")) document.body.setAttribute("tabindex", "-1");
+      document.body.focus();
+    } catch (e) { /* ignore */ }
+    var link = document.querySelector("a[href]");
+    if (link && !document.hasFocus()) {
+      try { link.focus(); link.blur() } catch (e) { /* ignore */ }
+    }
+    report.push(label + ": " + (before ? "Y" : "n") + ">" + (document.hasFocus() ? "Y" : "n"));
+    line.textContent = "SPIKE refocus (hasFocus before>after) " + report.join("  ");
+  }
+
+  attempt("load");
+  [0, 100, 300, 1000, 2000].forEach(function(delay) {
+    window.setTimeout(function() { attempt(delay + "ms") }, delay);
+  });
+
+  // Did a key arrive at all? Then the focus is back for real.
+  document.addEventListener("keydown", function(event) {
+    report.push("key " + (event.key || event.keyCode));
+    line.textContent = "SPIKE refocus (hasFocus before>after) " + report.join("  ");
+  }, true);
+}
+
+window.addEventListener("load", function() {
+  if (gEnv.browserControl === "Edge") refocusAfterEscape();
+});
 
 /**********************************************************
  * Source Viewer
