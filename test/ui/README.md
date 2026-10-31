@@ -51,6 +51,7 @@ Avoid expanding the fixtures into a general-purpose browser emulator.
 | [`picklist.test.cjs`](picklist.test.cjs) | Arrow navigation, mouse and keyboard selection, explicit confirmation, boundaries, disabled entries, and keyboard guards |
 | [`modal.test.cjs`](modal.test.cjs) | Tab and Shift+Tab kept inside an in-page popup, from the page behind it and at both ends |
 | [`link-hints.test.cjs`](link-hints.test.cjs) | Partial hints, cancellation/reopening, copy-mode reset, disabled controls, and checkbox activation |
+| [`escape-overlays.test.cjs`](escape-overlays.test.cjs) | Escape closing the command palette and the link hints (with a half-typed code and yank mode) on the Edge control and WebGUI, and left alone on SAP GUI for Java and the IE control |
 | [`key-navigation.test.cjs`](key-navigation.test.cjs) | Dropdown navigation and boundaries, link activation, modified keys, and editing controls |
 | [`diff-copy.test.cjs`](diff-copy.test.cjs) | Diff-column copying, invalid/empty selections, unrelated table clicks, and clipboard fallbacks |
 | [`error-banner.test.cjs`](error-banner.test.cjs) | Reporting later script errors in the banner, and ignoring scripts that are not ours |
