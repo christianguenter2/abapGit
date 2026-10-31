@@ -2354,7 +2354,8 @@ function activateLinkHints(linkHintHotKey) {
 var gOverlaysCloseOnEscape = false;
 
 function closeOverlaysOnEscape() {
-  if (gOverlaysCloseOnEscape || (!gEnv.isWebGui && gEnv.browserControl !== "Edge")) return;
+  var isJava = !gEnv.isWebGui && !gEnv.isSapGuiForWindows;
+  if (gOverlaysCloseOnEscape || (!isJava && !gEnv.isWebGui && gEnv.browserControl !== "Edge")) return;
   gOverlaysCloseOnEscape = true;
 
   var isClosing = false;
@@ -2371,6 +2372,9 @@ function closeOverlaysOnEscape() {
         if (palette.elements.palette.style.display !== "none") palette.toggleDisplay(false);
       });
       if (hints) hints.hide();
+      // SPIKE: SAP GUI for Java sends this Escape as a graceful back anyway.
+      // Tell the server first, so that back stays on the page.
+      if (isJava) submitSapeventForm({}, "overlay_escaped");
     }
     if (!isClosing) return;
     event.preventDefault();

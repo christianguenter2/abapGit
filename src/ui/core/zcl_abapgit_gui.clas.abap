@@ -66,7 +66,11 @@ CLASS zcl_abapgit_gui DEFINITION
         bookmark TYPE abap_bool,
       END OF ty_page_stack .
 
+    CONSTANTS c_action_overlay_escaped TYPE string VALUE `overlay_escaped` ##NO_TEXT.
+
     DATA mv_rollback_on_error TYPE abap_bool .
+    " SPIKE: when the page last reported Escape closing its palette or link hints
+    DATA mv_overlay_escaped_at TYPE timestampl .
     DATA mi_cur_page TYPE REF TO zif_abapgit_gui_renderable .
     DATA mt_stack             TYPE STANDARD TABLE OF ty_page_stack .
     DATA mt_event_handlers    TYPE STANDARD TABLE OF REF TO zif_abapgit_gui_event_handler .
@@ -179,6 +183,26 @@ CLASS zcl_abapgit_gui IMPLEMENTATION.
 
     DATA li_handler TYPE REF TO zif_abapgit_gui_event_handler.
     DATA ls_handled TYPE zif_abapgit_gui_event_handler=>ty_handling_result.
+    DATA lv_now TYPE timestampl.
+    DATA lv_age TYPE tzntstmpl.
+
+    " SPIKE (SAP GUI for Java): Escape in the page closed its palette or link
+    " hints and reported that just before. SAP GUI sends the same Escape as
+    " this graceful back - stay on the page instead of leaving it.
+    IF mv_overlay_escaped_at IS NOT INITIAL.
+      GET TIME STAMP FIELD lv_now.
+      lv_age = cl_abap_tstmp=>subtract(
+        tstmp1 = lv_now
+        tstmp2 = mv_overlay_escaped_at ).
+      CLEAR mv_overlay_escaped_at.
+      IF lv_age <= 2.
+        MESSAGE |SPIKE: back after overlay Escape ({ lv_age }s): stay| TYPE 'S'.
+        render( ).
+        rv_handled = abap_true.
+        RETURN.
+      ENDIF.
+    ENDIF.
+    MESSAGE 'SPIKE: back without overlay Escape' TYPE 'S'.
 
     " This code can be potentially improved
     " Why send go_back to the topmost handler only ? It makes sense to notify the whole stack
@@ -297,6 +321,13 @@ CLASS zcl_abapgit_gui IMPLEMENTATION.
       li_handler   TYPE REF TO zif_abapgit_gui_event_handler,
       li_event     TYPE REF TO zif_abapgit_gui_event,
       ls_handled   TYPE zif_abapgit_gui_event_handler=>ty_handling_result.
+
+    IF iv_action = c_action_overlay_escaped.
+      GET TIME STAMP FIELD mv_overlay_escaped_at.
+      MESSAGE 'SPIKE: overlay_escaped received' TYPE 'S'.
+      RETURN.
+    ENDIF.
+    CLEAR mv_overlay_escaped_at.
 
     CREATE OBJECT li_event TYPE zcl_abapgit_gui_event
       EXPORTING
