@@ -3497,6 +3497,41 @@ function trapFocus() {
     event.preventDefault();
     target.focus();
   }, true);
+
+  closePopupOnEscape();
+}
+
+// SPIKE (issue #7925): Escape cancels the in-page popup on the Edge control and
+// on WebGUI, the way SAP GUI for Java already does (CCAN -> graceful go_back to
+// the topmost handler, which the popups treat as cancel). Here the page sends
+// that go_back itself. Not on Java (it would go back twice) and not on the IE
+// control.
+//
+// All three key events are cancelled: on Edge an uncancelled keyup reaches SAP
+// GUI, which then leaves abapGit. SAP GUI still takes the keyboard focus out of
+// the control on Escape, but go_back is a round trip, and PBO puts the focus
+// back (zcl_abapgit_gui->set_focus). That is the hypothesis this spike tests.
+function closePopupOnEscape() {
+  if (!gEnv.isWebGui && gEnv.browserControl !== "Edge") return;
+
+  var sent = false;
+
+  function isEscape(event) {
+    return event.key === "Escape" || event.key === "Esc" || (event.keyCode || event.which) === 27;
+  }
+
+  function swallow(event) {
+    if (!isEscape(event) || !document.getElementById("modal")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.type !== "keydown" || sent) return;
+    sent = true; // key repeat must not send a second go_back
+    triggerSapEventBack("go_back");
+  }
+
+  ["keydown", "keypress", "keyup"].forEach(function(type) {
+    document.addEventListener(type, swallow, true);
+  });
 }
 
 /**********************************************************
